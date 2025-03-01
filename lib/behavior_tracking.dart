@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
+// Keeping the _BehaviorTrackingPageState as private for the internal state class
 class BehaviorTrackingPage extends StatefulWidget {
+  const BehaviorTrackingPage({super.key});
+
   @override
   _BehaviorTrackingPageState createState() => _BehaviorTrackingPageState();
 }
 
+// Private state class for internal use
 class _BehaviorTrackingPageState extends State<BehaviorTrackingPage> {
   final List<String> behaviorOptions = [
     'Excessive Worries',
@@ -14,7 +18,9 @@ class _BehaviorTrackingPageState extends State<BehaviorTrackingPage> {
     'Hyperactivity',
     'Difficulty Sleeping',
   ];
-  final List<String> selectedBehaviors = [];
+
+  // Making selectedBehaviors mutable by using a regular list and not final
+  List<String> selectedBehaviors = [];
   final TextEditingController specialNotesController = TextEditingController();
 
   @override
@@ -25,21 +31,26 @@ class _BehaviorTrackingPageState extends State<BehaviorTrackingPage> {
         title: Text('Behavior Tracking'),
         backgroundColor: Colors.blue[400], // Consistent with dashboard
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Select Observed Behaviors:',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[400], // Consistent color
+      body: SingleChildScrollView(
+        // Ensures scrollability
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Select Observed Behaviors:',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[400], // Consistent color
+                ),
               ),
-            ),
-            Expanded(
-              child: ListView(
+              ListView(
+                shrinkWrap:
+                    true, // Important for nesting ListView inside Column
+                physics:
+                    NeverScrollableScrollPhysics(), // Prevent internal scrolling
                 children:
                     behaviorOptions.map((behavior) {
                       return Card(
@@ -65,47 +76,48 @@ class _BehaviorTrackingPageState extends State<BehaviorTrackingPage> {
                       );
                     }).toList(),
               ),
-            ),
-            Text(
-              'Special Notes:',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[400], // Matching title color
-              ),
-            ),
-            SizedBox(height: 5),
-            TextField(
-              controller: specialNotesController,
-              decoration: InputDecoration(
-                hintText: 'Enter any additional notes...',
-                filled: true,
-                fillColor: Colors.blue[50], // Light blue background
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none, // Remove default border
+              SizedBox(height: 10),
+              Text(
+                'Special Notes:',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[400], // Matching title color
                 ),
               ),
-              maxLines: 3,
-            ),
-            SizedBox(height: 16),
-            Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  // Handle submission logic
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[400], // Matching button color
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              SizedBox(height: 5),
+              TextField(
+                controller: specialNotesController,
+                decoration: InputDecoration(
+                  hintText: 'Enter any additional notes...',
+                  filled: true,
+                  fillColor: Colors.blue[50], // Light blue background
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none, // Remove default border
+                  ),
                 ),
-                child: Text(
-                  'Save Behavior Data',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                maxLines: 3,
+              ),
+              SizedBox(height: 16),
+              Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Handle submission logic
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[400], // Matching button color
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  child: Text(
+                    'Save Behavior Data',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

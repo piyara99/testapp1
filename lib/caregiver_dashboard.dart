@@ -3,6 +3,7 @@ import 'package:testapp/signin.dart';
 import 'mood_tracking.dart'; // Import the mood_tracking.dart page
 import 'task_management.dart'; // Import the task_management.dart page
 import 'behavior_tracking.dart'; // Import the new behavior tracking page
+import 'image_communication.dart'; // Import the new page
 
 void main() {
   runApp(MyApp());
@@ -85,6 +86,17 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => TaskManagementPage()),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('Image Communication'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ImageCommunicationPage(),
+                  ),
                 );
               },
             ),
