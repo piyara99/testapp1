@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'caregiver_dashboard.dart'; // Import the caregiver_dashboard.dart file
 
 void main() {
   runApp(const MyApp());
@@ -96,7 +97,15 @@ class MainDashboard extends StatelessWidget {
                         ProfileCard(
                           title: 'Caregiver',
                           icon: Icons.person,
-                          onTap: () {},
+                          onTap: () {
+                            // Navigate to Caregiver Dashboard
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CaregiverDashboard(),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -132,7 +141,6 @@ class ProfileCard extends StatelessWidget {
         width: 140,
         height: 180,
         decoration: BoxDecoration(
-          // Replace withAlpha(38) (~0.15 opacity) or any value that suits your preference
           color: Colors.white.withAlpha(38),
           borderRadius: BorderRadius.circular(16),
         ),

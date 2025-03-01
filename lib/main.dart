@@ -129,7 +129,12 @@ class SignUpPage extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      // TODO: Implement sign-up logic
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MainDashboard(),
+                        ),
+                      );
                     },
                     child: const Text(
                       "SIGN UP",
@@ -151,9 +156,7 @@ class SignUpPage extends StatelessWidget {
                         style: TextStyle(color: Colors.white70),
                       ),
                       GestureDetector(
-                        onTap: () {
-                          // TODO: Navigate to Sign In page
-                        },
+                        onTap: () {},
                         child: const Text(
                           "Sign in",
                           style: TextStyle(
