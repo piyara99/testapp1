@@ -4,6 +4,7 @@ import 'mood_tracking.dart'; // Import the mood_tracking.dart page
 import 'task_management.dart'; // Import the task_management.dart page
 import 'behavior_tracking.dart'; // Import the new behavior tracking page
 import 'image_communication.dart'; // Import the new page
+import 'selfcarediary.dart';
 
 void main() {
   runApp(MyApp());
@@ -65,6 +66,17 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                   MaterialPageRoute(
                     builder: (context) => BehaviorTrackingPage(),
                   ),
+                );
+              },
+            ),
+            ListTile(
+              title: Text('AI Self-Care Diary'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AISelfCareDiaryPage(),
+                  ), // Use AISelfCareDiaryPage instead
                 );
               },
             ),
