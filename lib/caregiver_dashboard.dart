@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:testapp/signin.dart';
+import 'mood_tracking.dart'; // Import the mood_tracking.dart page
+import 'task_management.dart'; // Import the task_management.dart page
 
 void main() {
   runApp(MyApp());
@@ -52,7 +55,36 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             ),
             ListTile(title: Text('Dashboard'), onTap: () {}),
             ListTile(title: Text('Settings'), onTap: () {}),
-            ListTile(title: Text('Log Out'), onTap: () {}),
+            ListTile(
+              title: const Text('Mood Tracking'),
+              onTap: () {
+                // Navigate to the MoodTrackingPage
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MoodTrackingPage()),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('Manage Tasks'),
+              onTap: () {
+                // Navigate to the Task Management Page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TaskManagementPage()),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('Log Out'),
+              onTap: () {
+                // Navigate to Sign In Page after log out
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SignInPage()),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -92,9 +124,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                 ),
               ),
             ),
-
             SizedBox(height: 20),
-
             // Overview Section for Completed Tasks
             Text(
               'Child\'s Completed Tasks',
