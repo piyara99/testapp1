@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:testapp/signin.dart';
 import 'mood_tracking.dart'; // Import the mood_tracking.dart page
 import 'task_management.dart'; // Import the task_management.dart page
+import 'behavior_tracking.dart'; // Import the new behavior tracking page
 
 void main() {
   runApp(MyApp());
@@ -55,6 +56,18 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             ),
             ListTile(title: Text('Dashboard'), onTap: () {}),
             ListTile(title: Text('Settings'), onTap: () {}),
+            ListTile(
+              title: const Text('Behavior Tracking'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BehaviorTrackingPage(),
+                  ),
+                );
+              },
+            ),
+
             ListTile(
               title: const Text('Mood Tracking'),
               onTap: () {
@@ -134,6 +147,26 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                 color: Colors.blue[400],
               ),
             ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BehaviorTrackingPage(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[400], // Match theme color
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: Text(
+                'Track Behavior',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+
             Card(
               color: Colors.blue[50],
               margin: EdgeInsets.symmetric(vertical: 8),
