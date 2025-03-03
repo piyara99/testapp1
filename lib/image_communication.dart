@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class ImageCommunicationPage extends StatefulWidget {
+  const ImageCommunicationPage({super.key});
+
   @override
   ImageCommunicationPageState createState() => ImageCommunicationPageState();
 }

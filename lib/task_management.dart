@@ -28,11 +28,11 @@ class TaskManagementPage extends StatelessWidget {
               onPressed: () {
                 // You can add your task creation logic here
               },
-              child: Text('Add New Task'),
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: Colors.blue[400], // Text color
               ),
+              child: Text('Add New Task'),
             ),
             SizedBox(height: 20),
             Text(

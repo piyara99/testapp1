@@ -1,127 +1,187 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AISelfCareDiaryPage extends StatefulWidget {
-  const AISelfCareDiaryPage({Key? key}) : super(key: key);
+  const AISelfCareDiaryPage({super.key});
 
   @override
-  _AISelfCareDiaryPageState createState() => _AISelfCareDiaryPageState();
+  AISelfCareDiaryPageState createState() => AISelfCareDiaryPageState();
 }
 
-class _AISelfCareDiaryPageState extends State<AISelfCareDiaryPage> {
-  final TextEditingController diaryController = TextEditingController();
+class AISelfCareDiaryPageState extends State<AISelfCareDiaryPage> {
+  final TextEditingController logController = TextEditingController();
   final TextEditingController chatController = TextEditingController();
+  List<String> logs = [];
   List<String> messages = [];
+  bool isChatOpen = false;
 
-  // Asynchronous function for AI response (integrating actual API in future)
+  final String openAIKey = "your_openai_api_key"; // Replace with actual API key
+
+  // Function to get AI response from OpenAI GPT
   Future<String> getAIResponse(String userInput) async {
-    // Here, you can integrate with OpenAI or another AI API to get the response.
-    // For now, we'll simulate the response.
-    await Future.delayed(Duration(seconds: 1)); // Simulate network delay
-    return "AI: I hear you! How can I assist you further?"; // Simulated AI response
+    const String apiUrl = "https://api.openai.com/v1/chat/completions";
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          "Authorization": "Bearer $openAIKey",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "model": "gpt-3.5-turbo",
+          "messages": [
+            {"role": "system", "content": "You are a helpful AI companion."},
+            {"role": "user", "content": userInput},
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        return data['choices'][0]['message']['content'].toString();
+      } else {
+        return "Error: Unable to fetch AI response.";
+      }
+    } catch (e) {
+      return "Error: Could not connect to the server.";
+    }
+  }
+
+  void toggleChat() {
+    setState(() {
+      isChatOpen = !isChatOpen;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF7F9FB), // Light Gray background
+      backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
-        title: Text('AI Self-Care Diary'),
-        backgroundColor: Color(0xFFA8DADC), // Soft Blue for the header
+        title: const Text('Self-Care Log'),
+        backgroundColor: const Color(0xFFA8DADC),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Diary section
-            Text(
-              'Your Self-Care Diary:',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF4A4A4A), // Dark Slate Gray
-              ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: diaryController,
-              decoration: InputDecoration(
-                hintText: 'Write about your feelings, thoughts, or goals...',
-                filled: true,
-                fillColor: Color(
-                  0xFFB4E1B2,
-                ), // Mint Green background for text input
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              maxLines: 6,
-              textInputAction: TextInputAction.done,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Add logic to save diary entry here (or use a database)
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Your diary entry has been saved.')),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFA8DADC), // Soft Blue button
-                padding: EdgeInsets.symmetric(horizontal: 25, vertical: 12),
-              ),
-              child: Text('Save Entry', style: TextStyle(color: Colors.white)),
-            ),
-            SizedBox(height: 20),
-
-            // AI Chat Section
-            Text(
-              'Chat with AI Companion:',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Daily Self-Care Log:',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF4A4A4A),
               ),
             ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  return ListTile(title: Text(messages[index]));
-                },
-              ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: logs.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(logs[index]),
+                  tileColor: const Color(0xFFD0F0C0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding: const EdgeInsets.all(10),
+                );
+              },
             ),
-            TextField(
-              controller: chatController,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: logController,
               decoration: InputDecoration(
-                hintText: 'Ask your AI companion...',
+                hintText: 'Write your self-care log...',
                 filled: true,
-                fillColor: Color(0xFFB4E1B2),
+                fillColor: const Color(0xFFB4E1B2),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
                 ),
               ),
-              onSubmitted: (text) async {
+              onSubmitted: (text) {
                 setState(() {
-                  // Add user message to the list
-                  messages.add("You: $text");
+                  logs.add(text);
                 });
-
-                // Get AI response
-                String aiResponse = await getAIResponse(text);
-                setState(() {
-                  // Add AI response to the list
-                  messages.add(aiResponse);
-                });
-
-                // Clear chat input field
-                chatController.clear();
+                logController.clear();
               },
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: toggleChat,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFA8DADC),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.all(16),
+            ),
+            child: const Text(
+              "AI Chat",
+              style: TextStyle(fontSize: 18, color: Colors.white),
+            ),
+          ),
+          if (isChatOpen) _buildChatPanel(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatPanel() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: 300,
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            "AI Chat Companion",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                return ListTile(title: Text(messages[index]));
+              },
+            ),
+          ),
+          TextField(
+            controller: chatController,
+            decoration: InputDecoration(
+              hintText: 'Ask AI...',
+              filled: true,
+              fillColor: const Color(0xFFE0E0E0),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onSubmitted: (text) async {
+              setState(() {
+                messages.add("You: $text");
+              });
+
+              String aiResponse = await getAIResponse(text);
+              setState(() {
+                messages.add("AI: $aiResponse");
+              });
+
+              chatController.clear();
+            },
+          ),
+        ],
       ),
     );
   }
