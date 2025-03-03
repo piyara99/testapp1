@@ -5,6 +5,8 @@ import 'task_management.dart'; // Import the task_management.dart page
 import 'behavior_tracking.dart'; // Import the new behavior tracking page
 import 'image_communication.dart'; // Import the new page
 import 'selfcarediary.dart';
+import 'settings_page.dart';
+import 'reports_insights_page.dart'; // Import the new Reports page
 
 void main() {
   runApp(MyApp());
@@ -57,7 +59,6 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
               decoration: BoxDecoration(color: Colors.blue[400]),
             ),
             ListTile(title: Text('Dashboard'), onTap: () {}),
-            ListTile(title: Text('Settings'), onTap: () {}),
             ListTile(
               title: const Text('Behavior Tracking'),
               onTap: () {
@@ -109,6 +110,29 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                   MaterialPageRoute(
                     builder: (context) => ImageCommunicationPage(),
                   ),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('Reports & Insights'),
+              onTap: () {
+                // Navigate to the Reports & Insights Page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ReportsInsightsPage(),
+                  ),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
                 );
               },
             ),
