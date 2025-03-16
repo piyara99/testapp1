@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:testapp/main_dashboard.dart';
 import 'package:testapp/signin.dart';
 import 'mood_tracking.dart'; // Import the mood_tracking.dart page
 import 'task_management.dart'; // Import the task_management.dart page
@@ -58,7 +59,19 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
               ),
               decoration: BoxDecoration(color: Colors.blue[400]),
             ),
-            ListTile(title: Text('Dashboard'), onTap: () {}),
+            ListTile(
+              title: const Text('Dashboard'),
+              onTap: () {
+                // Navigate to the Main Dashboard Page
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MainDashboard(),
+                  ),
+                );
+              },
+            ),
+
             ListTile(
               title: const Text('Behavior Tracking'),
               onTap: () {
