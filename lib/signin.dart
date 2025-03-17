@@ -1,7 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:testapp/main.dart';
-import 'package:testapp/main_dashboard.dart';
-// Import the main dashboard page
+import 'package:testapp/main_dashboard.dart'; // Import the main dashboard page
 
 void main() {
   runApp(const MyApp());
@@ -20,12 +20,44 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class SignInPage extends StatelessWidget {
+class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
 
   @override
+  _SignInPageState createState() => _SignInPageState();
+}
+
+class _SignInPageState extends State<SignInPage> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Sign In Function
+  Future<void> _signIn() async {
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      print("User signed in: ${userCredential.user?.email}");
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainDashboard()),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message ?? 'An error occurred')));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Define a relaxing blue gradient
     const Color startBlue = Color(0xFF5C7AEA); // Darker shade
     const Color endBlue = Color(0xFF8EA6F2); // Lighter shade
 
@@ -42,7 +74,6 @@ class SignInPage extends StatelessWidget {
               ),
             ),
           ),
-
           // 2) Background Circles / Shapes
           Positioned(
             top: -40,
@@ -68,7 +99,6 @@ class SignInPage extends StatelessWidget {
               ),
             ),
           ),
-
           // 3) Main Content
           SafeArea(
             child: SingleChildScrollView(
@@ -90,6 +120,7 @@ class SignInPage extends StatelessWidget {
 
                   // Email Field
                   _buildTextField(
+                    controller: _emailController,
                     hintText: "Email",
                     icon: Icons.email_outlined,
                   ),
@@ -97,6 +128,7 @@ class SignInPage extends StatelessWidget {
 
                   // Password Field
                   _buildTextField(
+                    controller: _passwordController,
                     hintText: "Password",
                     icon: Icons.lock_outline,
                     obscureText: true,
@@ -112,15 +144,7 @@ class SignInPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: () {
-                      // Navigate to MainDashboard after sign-in
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MainDashboard(),
-                        ),
-                      );
-                    },
+                    onPressed: _signIn,
                     child: const Text(
                       "SIGN IN",
                       style: TextStyle(
@@ -172,11 +196,13 @@ class SignInPage extends StatelessWidget {
 
   // Helper widget to build styled text fields
   Widget _buildTextField({
+    required TextEditingController controller,
     required String hintText,
     required IconData icon,
     bool obscureText = false,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(

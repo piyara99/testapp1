@@ -9,7 +9,7 @@ plugins {
 android {
     namespace = "com.example.testapp"
     compileSdk = 34
-    ndkVersion = "25.2.9519653"
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -31,6 +31,10 @@ android {
         versionName = "1.0"
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
@@ -43,7 +47,7 @@ android {
     resolutionStrategy.eachDependency {
         if (requested.group == "org.jetbrains.kotlin") {
             useVersion("2.1.0")
-        }
+        }  
     }
 }
 
