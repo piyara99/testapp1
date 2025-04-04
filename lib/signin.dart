@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore for saving user data
 import 'package:testapp/main_dashboard.dart'; // Import the main dashboard page
-import 'package:testapp/signin.dart'; // Import the sign-in page
+// Import the sign-in page
 
 void main() {
   runApp(const MyApp());
