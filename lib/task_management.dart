@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +26,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Sign-In Page
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
 
@@ -84,7 +81,6 @@ class _SignInPageState extends State<SignInPage> {
   }
 }
 
-/// Task Management Page
 class TaskManagementPage extends StatefulWidget {
   const TaskManagementPage({super.key});
 
@@ -95,33 +91,8 @@ class TaskManagementPage extends StatefulWidget {
 class _TaskManagementPageState extends State<TaskManagementPage> {
   final TextEditingController _taskNameController = TextEditingController();
   final TextEditingController _taskTimeController = TextEditingController();
-  XFile? _image;
-  final ImagePicker _picker = ImagePicker();
-
+  final TextEditingController _imageUrlController = TextEditingController();
   final String userId = FirebaseAuth.instance.currentUser!.uid;
-
-  Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery,
-    );
-    setState(() {
-      _image = pickedFile;
-    });
-  }
-
-  Future<String?> _uploadImage() async {
-    if (_image == null) return null;
-    try {
-      final ref = FirebaseStorage.instance.ref().child(
-        'tasks/$userId/${DateTime.now().millisecondsSinceEpoch}',
-      );
-      final uploadTask = await ref.putFile(File(_image!.path));
-      return await uploadTask.ref.getDownloadURL();
-    } catch (e) {
-      print('Error uploading image: $e');
-      return null;
-    }
-  }
 
   Future<void> _addTask() async {
     if (_taskNameController.text.isEmpty || _taskTimeController.text.isEmpty) {
@@ -133,7 +104,14 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
 
     final taskName = _taskNameController.text;
     final taskTime = _taskTimeController.text;
-    final imageUrl = await _uploadImage();
+    final imageUrl = _imageUrlController.text.trim();
+
+    if (imageUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid image URL')),
+      );
+      return;
+    }
 
     try {
       await FirebaseFirestore.instance.collection('tasks').add({
@@ -147,17 +125,100 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Task added successfully')));
+
       _taskNameController.clear();
       _taskTimeController.clear();
-      setState(() {
-        _image = null;
-      });
+      _imageUrlController.clear();
     } catch (e) {
       print('Error adding task: $e');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Error adding task')));
     }
+  }
+
+  Future<void> _editTask(
+    String taskId,
+    String taskName,
+    String taskTime,
+    String imageUrl,
+  ) async {
+    _taskNameController.text = taskName;
+    _taskTimeController.text = taskTime;
+    _imageUrlController.text = imageUrl;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Task'),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _taskNameController,
+                decoration: const InputDecoration(labelText: 'Task Name'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _taskTimeController,
+                decoration: const InputDecoration(labelText: 'Task Time'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _imageUrlController,
+                decoration: const InputDecoration(labelText: 'Image URL'),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                final taskName = _taskNameController.text;
+                final taskTime = _taskTimeController.text;
+                final imageUrl = _imageUrlController.text.trim();
+
+                if (taskName.isEmpty || taskTime.isEmpty || imageUrl.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill all fields')),
+                  );
+                  return;
+                }
+
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('tasks')
+                      .doc(taskId)
+                      .update({
+                        'taskName': taskName,
+                        'taskTime': taskTime,
+                        'image': imageUrl,
+                      });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Task updated successfully')),
+                  );
+
+                  Navigator.pop(context); // Close the dialog
+                } catch (e) {
+                  print('Error updating task: $e');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Error updating task')),
+                  );
+                }
+              },
+              child: const Text('Save Changes'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog without saving
+              },
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -184,9 +245,9 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevatedButton(
-              onPressed: _pickImage,
-              child: const Text('Pick Image for Task'),
+            TextField(
+              controller: _imageUrlController,
+              decoration: const InputDecoration(labelText: 'Enter Image URL'),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -220,14 +281,24 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
                     itemCount: tasks.length,
                     itemBuilder: (context, index) {
                       final task = tasks[index];
+                      final taskName = task['taskName'] ?? 'No Task Name';
+                      final taskTime = task['taskTime'] ?? 'No Time Set';
+                      final imageUrl = task['image'] ?? '';
+
                       return Card(
                         child: ListTile(
-                          title: Text(task['taskName']),
-                          subtitle: Text(task['taskTime']),
+                          title: Text(taskName),
+                          subtitle: Text(taskTime),
                           leading:
-                              task['image'] != null
-                                  ? Image.network(task['image'])
-                                  : null,
+                              imageUrl.isNotEmpty
+                                  ? Image.network(imageUrl)
+                                  : const Icon(Icons.image),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () {
+                              _editTask(task.id, taskName, taskTime, imageUrl);
+                            },
+                          ),
                         ),
                       );
                     },
