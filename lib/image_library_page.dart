@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'image_display_page.dart'; // Import the new page
 
 class ImageLibraryPage extends StatefulWidget {
   const ImageLibraryPage({super.key});
@@ -24,24 +25,31 @@ class _ImageLibraryPageState extends State<ImageLibraryPage> {
                 labelText: 'Search by caption',
                 prefixIcon: Icon(Icons.search),
               ),
-              onChanged: (value) => setState(() => _searchTerm = value.toLowerCase()),
+              onChanged:
+                  (value) => setState(() => _searchTerm = value.toLowerCase()),
             ),
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('imageLibrary')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('imageLibrary')
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                final docs = snapshot.data!.docs.where((doc) {
-                  final caption = (doc['caption'] ?? '').toLowerCase();
-                  return caption.contains(_searchTerm);
-                }).toList();
+                final docs =
+                    snapshot.data!.docs.where((doc) {
+                      final caption = (doc['caption'] ?? '').toLowerCase();
+                      return caption.contains(_searchTerm);
+                    }).toList();
 
-                if (docs.isEmpty) return const Center(child: Text("No images found"));
+                if (docs.isEmpty) {
+                  return const Center(child: Text("No images found"));
+                }
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(8),
@@ -53,14 +61,29 @@ class _ImageLibraryPageState extends State<ImageLibraryPage> {
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     final doc = docs[index];
-                    return Column(
-                      children: [
-                        Expanded(
-                          child: Image.network(doc['url'], fit: BoxFit.cover),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(doc['caption'], overflow: TextOverflow.ellipsis),
-                      ],
+                    return GestureDetector(
+                      onTap: () {
+                        // Navigate to the ImageDisplayPage
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => ImageDisplayPage(
+                                  imageUrl: doc['url'],
+                                  caption: doc['caption'],
+                                ),
+                          ),
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Image.network(doc['url'], fit: BoxFit.cover),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(doc['caption'], overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
                     );
                   },
                 );

@@ -76,10 +76,7 @@ class _SignInPageState extends State<SignInPage> {
         'tasks': [],
         // Add any other data you want to save under the user's ID
       });
-      print("New user data saved to Firestore");
-    } else {
-      print("User data already exists in Firestore");
-    }
+    } else {}
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:testapp/image_upload_page.dart';
 import 'package:testapp/main_dashboard.dart';
 import 'package:testapp/signin.dart'
     as signin; // Import SignInPage with a prefix
@@ -6,7 +7,6 @@ import 'mood_tracking.dart';
 import 'task_management.dart'
     as task; // Import TaskManagementPage with a prefix
 import 'behavior_tracking.dart';
-import 'image_communication.dart';
 import 'selfcarediary.dart';
 import 'settings_page.dart';
 import 'reports_insights_page.dart';
@@ -122,9 +122,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => ImageCommunicationPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => ImageUploadPage()),
                 );
               },
             ),
