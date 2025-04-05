@@ -212,8 +212,9 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
                         .where('userId', isEqualTo: userId)
                         .snapshots(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData)
+                  if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
+                  }
                   final tasks = snapshot.data!.docs;
                   return ListView.builder(
                     itemCount: tasks.length,

@@ -1,52 +1,39 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore for saving user data
-import 'package:testapp/main_dashboard.dart'; // Import the main dashboard page
-// Import the sign-in page
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:testapp/main_dashboard.dart';
+import 'signin.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Blue Gradient Sign In',
-      debugShowCheckedModeBanner: false,
-      home: const SignInPage(),
-    );
-  }
+  _SignUpPageState createState() => _SignUpPageState();
 }
 
-class SignInPage extends StatefulWidget {
-  const SignInPage({super.key});
-
-  @override
-  _SignInPageState createState() => _SignInPageState();
-}
-
-class _SignInPageState extends State<SignInPage> {
+class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Sign In Function
-  Future<void> _signIn() async {
+  Future<void> _signUp() async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      if (_passwordController.text == _confirmPasswordController.text) {
+        UserCredential userCredential = await _auth
+            .createUserWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+            );
 
-      print("User signed in: ${userCredential.user?.email}");
+        await _firestore.collection('users').doc(userCredential.user?.uid).set({
+          'email': _emailController.text.trim(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
 
-      if (userCredential.user != null) {
-        // After successful sign in, fetch and save user data to Firestore if not exists
-        _saveUserData(userCredential.user!.uid);
+        print("User signed up: ${userCredential.user?.email}");
 
         if (!mounted) return;
 
@@ -54,43 +41,26 @@ class _SignInPageState extends State<SignInPage> {
           context,
           MaterialPageRoute(builder: (context) => const MainDashboard()),
         );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Passwords do not match!')),
+        );
       }
     } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(e.message ?? 'An error occurred')));
-    }
-  }
-
-  // Save user data to Firestore (if not already saved)
-  Future<void> _saveUserData(String userId) async {
-    // Check if user data exists in Firestore
-    DocumentSnapshot userSnapshot =
-        await _firestore.collection('users').doc(userId).get();
-
-    if (!userSnapshot.exists) {
-      // Create a new user document if it doesn't exist
-      await _firestore.collection('users').doc(userId).set({
-        'email': _emailController.text.trim(),
-        'tasks': [],
-        // Add any other data you want to save under the user's ID
-      });
-      print("New user data saved to Firestore");
-    } else {
-      print("User data already exists in Firestore");
+      ).showSnackBar(SnackBar(content: Text(e.message ?? 'Sign-up failed')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color startBlue = Color(0xFF5C7AEA); // Darker shade
-    const Color endBlue = Color(0xFF8EA6F2); // Lighter shade
+    const Color startBlue = Color(0xFF5C7AEA);
+    const Color endBlue = Color(0xFF8EA6F2);
 
     return Scaffold(
       body: Stack(
         children: [
-          // 1) Background Gradient
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -100,32 +70,8 @@ class _SignInPageState extends State<SignInPage> {
               ),
             ),
           ),
-          // 2) Background Circles / Shapes
-          Positioned(
-            top: -40,
-            right: -40,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: const BoxDecoration(
-                color: Colors.white24,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: const BoxDecoration(
-                color: Colors.white24,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          // 3) Main Content
+          Positioned(top: -40, right: -40, child: _circle()),
+          Positioned(bottom: -50, left: -50, child: _circle(size: 150)),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -134,7 +80,7 @@ class _SignInPageState extends State<SignInPage> {
                 children: [
                   const SizedBox(height: 40),
                   const Text(
-                    "Sign In",
+                    "Create Your Account",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 32,
@@ -143,25 +89,26 @@ class _SignInPageState extends State<SignInPage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 30),
-
-                  // Email Field
                   _buildTextField(
                     controller: _emailController,
                     hintText: "Email",
                     icon: Icons.email_outlined,
                   ),
                   const SizedBox(height: 16),
-
-                  // Password Field
                   _buildTextField(
                     controller: _passwordController,
                     hintText: "Password",
                     icon: Icons.lock_outline,
                     obscureText: true,
                   ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _confirmPasswordController,
+                    hintText: "Confirm Password",
+                    icon: Icons.lock_outline,
+                    obscureText: true,
+                  ),
                   const SizedBox(height: 30),
-
-                  // SIGN IN Button
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
@@ -170,9 +117,9 @@ class _SignInPageState extends State<SignInPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: _signIn,
+                    onPressed: _signUp,
                     child: const Text(
-                      "SIGN IN",
+                      "SIGN UP",
                       style: TextStyle(
                         color: Colors.black87,
                         fontSize: 18,
@@ -181,27 +128,24 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Don't have an account? Sign Up link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
-                        "Don't have an account? ",
+                        "Already have an account? ",
                         style: TextStyle(color: Colors.white70),
                       ),
                       GestureDetector(
                         onTap: () {
-                          // Navigate to SignUp page when tapped
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const SignUpPage(),
+                              builder: (context) => const SignInPage(),
                             ),
                           );
                         },
                         child: const Text(
-                          "Sign up",
+                          "Sign in",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -220,7 +164,6 @@ class _SignInPageState extends State<SignInPage> {
     );
   }
 
-  // Helper widget to build styled text fields
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
@@ -244,13 +187,13 @@ class _SignInPageState extends State<SignInPage> {
       ),
     );
   }
-}
 
-class SignUpPage extends StatelessWidget {
-  const SignUpPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(body: Center(child: Text("Sign Up Page")));
-  }
+  Widget _circle({double size = 120}) => Container(
+    width: size,
+    height: size,
+    decoration: const BoxDecoration(
+      color: Colors.white24,
+      shape: BoxShape.circle,
+    ),
+  );
 }
