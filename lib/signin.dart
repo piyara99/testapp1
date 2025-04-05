@@ -1,8 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore for saving user data
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:testapp/main_dashboard.dart'; // Import the main dashboard page
-// Import the sign-in page
 
 void main() {
   runApp(const MyApp());
@@ -45,8 +44,8 @@ class _SignInPageState extends State<SignInPage> {
       print("User signed in: ${userCredential.user?.email}");
 
       if (userCredential.user != null) {
-        // After successful sign in, fetch and save user data to Firestore if not exists
-        _saveUserData(userCredential.user!.uid);
+        // Store user data in Firestore if it doesn't exist
+        await _saveUserData(userCredential.user!.uid);
 
         if (!mounted) return;
 
@@ -65,7 +64,6 @@ class _SignInPageState extends State<SignInPage> {
 
   // Save user data to Firestore (if not already saved)
   Future<void> _saveUserData(String userId) async {
-    // Check if user data exists in Firestore
     DocumentSnapshot userSnapshot =
         await _firestore.collection('users').doc(userId).get();
 
@@ -73,10 +71,9 @@ class _SignInPageState extends State<SignInPage> {
       // Create a new user document if it doesn't exist
       await _firestore.collection('users').doc(userId).set({
         'email': _emailController.text.trim(),
-        'tasks': [],
-        // Add any other data you want to save under the user's ID
+        'moodTracking': [], // Initialize an empty moodTracking subcollection
       });
-    } else {}
+    }
   }
 
   @override
