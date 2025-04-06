@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:testapp/child_profile.dart';
 import 'caregiver_dashboard.dart'; // Import the caregiver_dashboard.dart file
-import 'child_profile.dart';
 
 void main() {
   runApp(const MyApp());

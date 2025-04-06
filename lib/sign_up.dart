@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:testapp/main_dashboard.dart';
 import 'signin.dart';
 import 'child_profile_setup.dart'; // Import the child profile setup page
 

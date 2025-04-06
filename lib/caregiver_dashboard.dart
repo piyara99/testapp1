@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:testapp/image_upload_page.dart';
 import 'package:testapp/main_dashboard.dart';
@@ -42,6 +43,7 @@ class CaregiverDashboard extends StatefulWidget {
 
 class _CaregiverDashboardState extends State<CaregiverDashboard> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Function to get the current user's info
   User? getCurrentUser() {
@@ -51,6 +53,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
   @override
   Widget build(BuildContext context) {
     User? user = getCurrentUser();
+    String userId = user?.uid ?? ''; // Get the current user's ID
 
     return Scaffold(
       backgroundColor: Colors.white, // Background Color
@@ -194,28 +197,68 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                 color: Colors.blue[400],
               ),
             ),
-            Card(
-              color: Colors.blue[50],
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(
-                  'Task Completed: Brushing Teeth',
-                  style: TextStyle(color: Colors.blue[600]),
-                ),
-              ),
+
+            // StreamBuilder to fetch reminders from Firestore
+            StreamBuilder<QuerySnapshot>(
+              stream:
+                  _firestore
+                      .collection('users')
+                      .doc(userId) // Access the user's specific document
+                      .collection('reminders') // Fetch reminders for the user
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Error loading reminders'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No reminders available'));
+                }
+
+                // Get the reminder data from Firestore
+                var reminders = snapshot.data!.docs;
+
+                return Column(
+                  children:
+                      reminders.map<Widget>((reminder) {
+                        return Card(
+                          color: Colors.blue[50],
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Assuming 'title' and 'message' fields exist in Firestore
+                                Text(
+                                  reminder['title'] ?? 'No Title',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  reminder['description'] ?? 'No Message',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.blue[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                );
+              },
             ),
-            Card(
-              color: Colors.blue[50],
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(
-                  'Reminder: Schedule doctor visit',
-                  style: TextStyle(color: Colors.blue[600]),
-                ),
-              ),
-            ),
+
             const SizedBox(height: 20),
             // Overview Section for Completed Tasks
             Text(
@@ -248,27 +291,65 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                 style: TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
-            Card(
-              color: Colors.blue[50],
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(
-                  '1. Brushed Teeth - 10:00 AM',
-                  style: TextStyle(color: Colors.blue[600]),
-                ),
-              ),
-            ),
-            Card(
-              color: Colors.blue[50],
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(
-                  '2. Took Medication - 11:30 AM',
-                  style: TextStyle(color: Colors.blue[600]),
-                ),
-              ),
+            // StreamBuilder to fetch tasks from Firestore
+            StreamBuilder<QuerySnapshot>(
+              stream:
+                  _firestore
+                      .collection('users')
+                      .doc(userId) // Access the user's document
+                      .collection('child') // Access the child's data
+                      .doc('childProfile') // Access the child's profile
+                      .collection('tasks') // Fetch tasks
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Error loading tasks'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No tasks available'));
+                }
+
+                var tasks = snapshot.data!.docs;
+                return Column(
+                  children:
+                      tasks.map<Widget>((taskDoc) {
+                        // Get task status and determine color
+                        String status = taskDoc['status'] ?? 'not done';
+                        Color taskColor =
+                            status == 'done' ? Colors.green : Colors.red;
+
+                        return Card(
+                          color: taskColor.withOpacity(
+                            0.1,
+                          ), // Color change based on status
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Display task title
+                                Text(
+                                  taskDoc['taskName'] ?? 'No Title',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: taskColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                );
+              },
             ),
           ],
         ),

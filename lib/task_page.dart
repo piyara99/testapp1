@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -49,38 +50,47 @@ class TaskPage extends StatelessWidget {
                 // Success button to mark the task as done
                 ElevatedButton(
                   onPressed: () async {
-                    // Mark task as complete
-                    await FirebaseFirestore.instance
-                        .collection('tasks')
-                        .doc(taskId)
-                        .update({'status': 'done'});
+                    // Get the userId from Firebase Authentication
+                    var userId = FirebaseAuth.instance.currentUser?.uid;
 
-                    // Show reward popup
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text('Congratulations!'),
-                          content: const Text(
-                            'You completed the task! Here is your reward.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                Navigator.pop(
-                                  context,
-                                ); // Go back to ChildProfileFirstPage
-                              },
-                              child: const Text('OK'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
+                    if (userId == null) {
+                      // Handle case where user is not logged in
+                      print('No user is logged in');
+                      return;
+                    }
+
+                    // Construct the document reference using the userId
+                    var taskRef = FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userId) // Use the userId here
+                        .collection('child')
+                        .doc('childProfile')
+                        .collection('tasks')
+                        .doc(taskId); // Ensure taskId is valid
+
+                    // Check if the document exists
+                    var docSnapshot = await taskRef.get();
+                    if (docSnapshot.exists) {
+                      // If the document exists, update its status
+                      await taskRef.update({'status': 'done'});
+                    } else {
+                      // Handle the error if the document doesn't exist
+                      print('Document not found');
+                    }
                   },
-                  child: const Text('Success'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[400],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text(
+                    'Mark as Complete',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
                 ),
+
                 const SizedBox(width: 10),
 
                 // Fail button to mark the task as failed

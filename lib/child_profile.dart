@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:testapp/task_page.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Make sure this is imported
+import 'task_page.dart';
 import 'image_library_page.dart';
 
 class ChildTasksPage extends StatelessWidget {
-  final String userId =
-      'fjS6QHas0dSnrqB729lwmVaUqdk2'; // Replace with dynamic if needed
-
   @override
   Widget build(BuildContext context) {
+    final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    if (userId.isEmpty) {
+      return Scaffold(body: Center(child: Text('No user is logged in.')));
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: Drawer(
@@ -86,6 +90,7 @@ class ChildTasksPage extends StatelessWidget {
                       .collection('child')
                       .doc('childProfile')
                       .collection('tasks')
+                      .where('status', isNotEqualTo: 'done') // Filter tasks
                       .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -133,7 +138,6 @@ class ChildTasksPage extends StatelessWidget {
                           ),
                         );
                       },
-
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Stack(
