@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';  // Import Cloud Firestore
 import 'package:testapp/image_upload_page.dart';
 import 'package:testapp/main_dashboard.dart';
-import 'package:testapp/signin.dart'
-    as signin; // Import SignInPage with a prefix
+import 'package:testapp/reminder_page.dart';
+import 'package:testapp/signin.dart' as signin; // Import SignInPage with a prefix
 import 'mood_tracking.dart';
-import 'task_management.dart'
-    as task; // Import TaskManagementPage with a prefix
+import 'task_management.dart' as task; // Import TaskManagementPage with a prefix
 import 'behavior_tracking.dart';
 import 'selfcarediary.dart';
 import 'settings_page.dart';
@@ -36,7 +36,6 @@ class CaregiverDashboard extends StatefulWidget {
   const CaregiverDashboard({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _CaregiverDashboardState createState() => _CaregiverDashboardState();
 }
 
@@ -46,6 +45,25 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
   // Function to get the current user's info
   User? getCurrentUser() {
     return _auth.currentUser;
+  }
+
+  // Function to fetch reminders from Firestore
+  Future<List<String>> fetchReminders() async {
+    List<String> remindersList = [];
+    try {
+      // Assuming you have a collection "reminders" in Firestore
+      final snapshot = await FirebaseFirestore.instance
+          .collection('reminders')  // Collection where reminders are stored
+          .where('userId', isEqualTo: _auth.currentUser?.uid) // Assuming reminders are user-specific
+          .get();
+
+      for (var doc in snapshot.docs) {
+        remindersList.add(doc['reminderText']); // Assuming the field is "reminderText"
+      }
+    } catch (e) {
+      print('Error fetching reminders: $e');
+    }
+    return remindersList;
   }
 
   @override
@@ -74,7 +92,6 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             ListTile(
               title: const Text('Dashboard'),
               onTap: () {
-                // Navigate to the Main Dashboard Page
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -101,14 +118,13 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => AISelfCareDiaryPage(),
-                  ), // Use AISelfCareDiaryPage instead
+                  ),
                 );
               },
             ),
             ListTile(
               title: const Text('Mood Tracking'),
               onTap: () {
-                // Navigate to the MoodTrackingPage
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -120,12 +136,11 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             ListTile(
               title: const Text('Manage Tasks'),
               onTap: () {
-                // Navigate to the Task Management Page
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => task.TaskManagementPage(),
-                  ), // Updated
+                  ),
                 );
               },
             ),
@@ -139,9 +154,17 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
               },
             ),
             ListTile(
+              title: const Text('Reminders'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ReminderPage()),
+                );
+              },
+            ),
+            ListTile(
               title: const Text('Reports & Insights'),
               onTap: () {
-                // Navigate to the Reports & Insights Page
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -163,7 +186,6 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             ListTile(
               title: const Text('Log Out'),
               onTap: () {
-                // Log the user out and navigate to the Sign In page
                 _auth.signOut();
                 Navigator.pushReplacement(
                   context,
@@ -211,6 +233,43 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                   style: TextStyle(color: Colors.blue[600]),
                 ),
               ),
+            ),
+            const SizedBox(height: 20),
+            // Fetch reminders from Firestore and display them
+            FutureBuilder<List<String>>(
+              future: fetchReminders(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                }
+
+                if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Text('No reminders available.');
+                }
+
+                List<String> reminders = snapshot.data!;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: reminders.map((reminder) {
+                    return Card(
+                      color: Colors.blue[50],
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Text(
+                          reminder,
+                          style: TextStyle(color: Colors.blue[600]),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
             ),
             const SizedBox(height: 20),
             // Overview Section for Completed Tasks
