@@ -103,7 +103,6 @@ class _BehaviorChartPageState extends State<BehaviorChartPage> {
                     barGroups:
                         behaviors.asMap().entries.map((entry) {
                           final index = entry.key;
-                          final behavior = entry.value.key;
                           final count = entry.value.value;
                           return BarChartGroupData(
                             x: index,
