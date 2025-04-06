@@ -77,6 +77,14 @@ flutter:
     - assets/food.jpg
     - assets/sleep.jpg
     - assets/placeholder.jpg
+    - assets/child.png
+    - assets/carer.png
+    - assets/task1.png
+    - assets/task2.png
+    - assets/profile.png
+    - assets/head_sketches1.png
+    - assets/head_sketches2.png
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
