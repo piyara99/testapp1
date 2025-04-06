@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'caregiver_dashboard.dart'; // Import the caregiver_dashboard.dart file
+import 'child_profile_first.dart'; // Adjust the path as needed
 
 void main() {
   runApp(const MyApp());
@@ -92,8 +93,16 @@ class MainDashboard extends StatelessWidget {
                         ProfileCard(
                           title: 'Child',
                           icon: Icons.child_care,
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChildProfilePage(),
+                              ),
+                            );
+                          },
                         ),
+
                         ProfileCard(
                           title: 'Caregiver',
                           icon: Icons.person,
