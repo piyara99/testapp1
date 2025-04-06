@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'signin.dart';
-import 'sign_up.dart';
 import 'main_dashboard.dart';
 
 void main() async {

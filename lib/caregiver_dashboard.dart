@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:testapp/image_upload_page.dart';
 import 'package:testapp/main_dashboard.dart';
 import 'package:testapp/signin.dart'
     as signin; // Import SignInPage with a prefix
@@ -6,13 +7,13 @@ import 'mood_tracking.dart';
 import 'task_management.dart'
     as task; // Import TaskManagementPage with a prefix
 import 'behavior_tracking.dart';
-import 'image_communication.dart';
 import 'selfcarediary.dart';
 import 'settings_page.dart';
 import 'reports_insights_page.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -26,7 +27,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.blue[400], // Calm Blue
         hintColor: Colors.white, // White
       ),
-      home: CaregiverDashboard(),
+      home: const CaregiverDashboard(),
     );
   }
 }
@@ -40,12 +41,21 @@ class CaregiverDashboard extends StatefulWidget {
 }
 
 class _CaregiverDashboardState extends State<CaregiverDashboard> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Function to get the current user's info
+  User? getCurrentUser() {
+    return _auth.currentUser;
+  }
+
   @override
   Widget build(BuildContext context) {
+    User? user = getCurrentUser();
+
     return Scaffold(
       backgroundColor: Colors.white, // Background Color
       appBar: AppBar(
-        title: Text('Caregiver Dashboard'),
+        title: const Text('Caregiver Dashboard'),
         backgroundColor: Colors.blue[400], // Calm Blue
       ),
       drawer: Drawer(
@@ -53,8 +63,8 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
           padding: EdgeInsets.zero,
           children: <Widget>[
             UserAccountsDrawerHeader(
-              accountName: Text('Caregiver Name'),
-              accountEmail: Text('caregiver@example.com'),
+              accountName: Text(user?.displayName ?? 'Caregiver Name'),
+              accountEmail: Text(user?.email ?? 'caregiver@example.com'),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Icon(Icons.person, color: Colors.blue[400]),
@@ -85,7 +95,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
               },
             ),
             ListTile(
-              title: Text('AI Self-Care Diary'),
+              title: const Text('AI Self-Care Diary'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -101,7 +111,9 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                 // Navigate to the MoodTrackingPage
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => MoodTrackingPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const MoodTrackingPage(),
+                  ),
                 );
               },
             ),
@@ -122,9 +134,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => ImageCommunicationPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => ImageUploadPage()),
                 );
               },
             ),
@@ -153,12 +163,13 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             ListTile(
               title: const Text('Log Out'),
               onTap: () {
-                // Navigate to Sign In Page after log out
+                // Log the user out and navigate to the Sign In page
+                _auth.signOut();
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const signin.SignInPage(),
-                  ), // Updated
+                  ),
                 );
               },
             ),
@@ -181,7 +192,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             ),
             Card(
               color: Colors.blue[50],
-              margin: EdgeInsets.symmetric(vertical: 8),
+              margin: const EdgeInsets.symmetric(vertical: 8),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Text(
@@ -192,7 +203,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             ),
             Card(
               color: Colors.blue[50],
-              margin: EdgeInsets.symmetric(vertical: 8),
+              margin: const EdgeInsets.symmetric(vertical: 8),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Text(
@@ -201,7 +212,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             // Overview Section for Completed Tasks
             Text(
               'Child\'s Completed Tasks',
@@ -211,28 +222,31 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                 color: Colors.blue[400],
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BehaviorTrackingPage(),
+                    builder: (context) => const BehaviorTrackingPage(),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[400], // Match theme color
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
               ),
-              child: Text(
+              child: const Text(
                 'Track Behavior',
                 style: TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
             Card(
               color: Colors.blue[50],
-              margin: EdgeInsets.symmetric(vertical: 8),
+              margin: const EdgeInsets.symmetric(vertical: 8),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Text(
@@ -243,7 +257,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             ),
             Card(
               color: Colors.blue[50],
-              margin: EdgeInsets.symmetric(vertical: 8),
+              margin: const EdgeInsets.symmetric(vertical: 8),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Text(
