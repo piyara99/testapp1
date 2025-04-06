@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:testapp/main_dashboard.dart';
 import 'signin.dart';
+import 'child_profile_setup.dart'; // Import the child profile setup page
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -37,9 +38,10 @@ class _SignUpPageState extends State<SignUpPage> {
 
         if (!mounted) return;
 
+        // Navigate to the success page after sign-up
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainDashboard()),
+          MaterialPageRoute(builder: (context) => const AccountCreatedPage()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -184,6 +186,90 @@ class _SignUpPageState extends State<SignUpPage> {
           borderSide: BorderSide.none,
           borderRadius: BorderRadius.circular(8),
         ),
+      ),
+    );
+  }
+
+  Widget _circle({double size = 120}) => Container(
+    width: size,
+    height: size,
+    decoration: const BoxDecoration(
+      color: Colors.white24,
+      shape: BoxShape.circle,
+    ),
+  );
+}
+
+// Account Created Page
+class AccountCreatedPage extends StatelessWidget {
+  const AccountCreatedPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const Color startBlue = Color(0xFF5C7AEA);
+    const Color endBlue = Color(0xFF8EA6F2);
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [startBlue, endBlue],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+          Positioned(top: -40, right: -40, child: _circle()),
+          Positioned(bottom: -50, left: -50, child: _circle(size: 150)),
+          SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Account Created Successfully",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      // Navigate to the ChildProfileSetupPage after successful sign-up
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChildProfileSetupPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "NEXT",
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

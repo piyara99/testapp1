@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:testapp/image_upload_page.dart';
 import 'package:testapp/main_dashboard.dart';
+import 'package:testapp/reminder_page.dart';
 import 'package:testapp/signin.dart'
     as signin; // Import SignInPage with a prefix
 import 'mood_tracking.dart';
@@ -135,6 +136,15 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ImageUploadPage()),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('Reminders'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ReminderPage()),
                 );
               },
             ),

@@ -5,11 +5,13 @@ class TaskPage extends StatelessWidget {
   final String taskId;
   final String taskName;
   final String imageUrl;
+  final String taskTime; // Add taskTime parameter
 
   const TaskPage({
     required this.taskId,
     required this.taskName,
     required this.imageUrl,
+    required this.taskTime, // Include taskTime in the constructor
     super.key,
   });
 
@@ -21,18 +23,30 @@ class TaskPage extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Display the task image if available, or a placeholder icon
             imageUrl.isNotEmpty
                 ? Image.network(imageUrl)
                 : const Icon(Icons.image),
             const SizedBox(height: 20),
+
+            // Display the task name
             Text(
               taskName,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 10),
+
+            // Display the task time
+            Text(
+              'Task Time: $taskTime',
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
+            ),
             const SizedBox(height: 20),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Success button to mark the task as done
                 ElevatedButton(
                   onPressed: () async {
                     // Mark task as complete
@@ -68,6 +82,8 @@ class TaskPage extends StatelessWidget {
                   child: const Text('Success'),
                 ),
                 const SizedBox(width: 10),
+
+                // Fail button to mark the task as failed
                 ElevatedButton(
                   onPressed: () {
                     // Mark task as failed
