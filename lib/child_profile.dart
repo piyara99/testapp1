@@ -1,40 +1,26 @@
 import 'package:flutter/material.dart';
-import 'image_library_page.dart'; // Import the existing image_library_page.dart
-
-void main() => runApp(MyApp());
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Child Tasks Page',
-      debugShowCheckedModeBanner: false,
-      home: ChildTasksPage(),
-    );
-  }
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:testapp/task_page.dart';
+import 'image_library_page.dart';
 
 class ChildTasksPage extends StatelessWidget {
-  final List<String> taskImages = [
-    'assets/task1.png',
-    'assets/task2.png',
-    'assets/task2.png',
-    'assets/task1.png',
-    'assets/task2.png',
-    'assets/task2.png',
-  ];
+  final String userId =
+      'fjS6QHas0dSnrqB729lwmVaUqdk2'; // Replace with dynamic if needed
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // ✅ No black background
+      backgroundColor: Colors.white,
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
               decoration: BoxDecoration(color: Colors.purple),
-              child: Text('Menu', style: TextStyle(color: Colors.white, fontSize: 24)),
+              child: Text(
+                'Menu',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
             ),
             ListTile(title: Text('Profile'), onTap: () {}),
             ListTile(title: Text('Settings'), onTap: () {}),
@@ -42,7 +28,7 @@ class ChildTasksPage extends StatelessWidget {
         ),
       ),
       appBar: AppBar(
-        backgroundColor: Colors.white, // ✅ Match background to white
+        backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.purple),
         actions: [
@@ -63,7 +49,11 @@ class ChildTasksPage extends StatelessWidget {
               children: [
                 Text(
                   'Miguel!',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.purple),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 4),
@@ -75,59 +65,113 @@ class ChildTasksPage extends StatelessWidget {
                 SizedBox(height: 16),
                 Text(
                   'Tasks',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
-          // Task Grid
+
+          // Task Grid from Firestore
           Expanded(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: GridView.builder(
-                itemCount: taskImages.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: 1,
-                ),
-                itemBuilder: (context, index) {
-                  return InkWell(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('Clicked on Task ${index + 1}'),
-                      ));
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.asset(
-                            taskImages[index],
-                            fit: BoxFit.cover,
+            child: StreamBuilder<QuerySnapshot>(
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(userId)
+                      .collection('child')
+                      .doc('childProfile')
+                      .collection('tasks')
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(child: Text('No tasks available.'));
+                }
+
+                final tasks = snapshot.data!.docs;
+
+                return GridView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: tasks.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                    childAspectRatio: 1,
+                  ),
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    final imageUrl = task['imageUrl'] ?? '';
+                    final title = task['taskName'] ?? 'Task';
+
+                    return InkWell(
+                      onTap: () {
+                        // Pass the task data to the TaskPage
+                        final taskName = task['taskName'] ?? 'Unnamed Task';
+                        final imageUrl = task['imageUrl'] ?? '';
+                        final taskTime = task['taskTime'] ?? 'N/A';
+                        final taskId = task.id;
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => TaskPage(
+                                  taskId: taskId, // Pass the taskId
+                                  taskName: taskName, // Pass the taskName
+                                  imageUrl: imageUrl, // Pass the imageUrl
+                                  taskTime:
+                                      taskTime, // Pass the taskTime (if needed)
+                                ),
                           ),
-                          if (index == 0)
+                        );
+                      },
+
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            imageUrl.startsWith('http')
+                                ? Image.network(imageUrl, fit: BoxFit.cover)
+                                : Image.asset(
+                                  'assets/default_task.png',
+                                  fit: BoxFit.cover,
+                                ),
                             Align(
-                              alignment: Alignment.center,
-                              child: Icon(Icons.thumb_up, size: 40, color: Colors.white),
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                color: Colors.black54,
+                                padding: EdgeInsets.all(4),
+                                child: Text(
+                                  title,
+                                  style: TextStyle(color: Colors.white),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
       ),
-      // Floating Action Button to navigate to the existing ImageLibraryPage
+
+      // Navigate to Image Library Page
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigate to the ImageLibraryPage (which is in image_library_page.dart)
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => ImageLibraryPage()),

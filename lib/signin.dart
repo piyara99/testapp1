@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:testapp/child_profile_setup.dart';
 import 'package:testapp/main_dashboard.dart'; // Import the main dashboard page
+import 'sign_up.dart';
 
 void main() {
   runApp(const MyApp());
@@ -44,11 +46,49 @@ class _SignInPageState extends State<SignInPage> {
       print("User signed in: ${userCredential.user?.email}");
 
       if (userCredential.user != null) {
-        // Store user data in Firestore if it doesn't exist
-        await _saveUserData(userCredential.user!.uid);
+        String userId = userCredential.user!.uid;
 
+        // Save user data if needed
+        await _saveUserData(userId);
+
+        // Check if child subcollection exists
+        CollectionReference childCollection = _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('child');
+
+        QuerySnapshot childSnapshot = await childCollection.get();
+
+        if (childSnapshot.docs.isEmpty) {
+          // No child subcollection documents found
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => ChildProfileSetupPage()),
+          );
+          return;
+        }
+
+        // Now check if child profile subcollection exists under the first child doc
+        DocumentSnapshot firstChildDoc = childSnapshot.docs.first;
+        CollectionReference profileCollection = childCollection
+            .doc(firstChildDoc.id)
+            .collection('profile');
+
+        QuerySnapshot profileSnapshot = await profileCollection.get();
+
+        if (profileSnapshot.docs.isEmpty) {
+          // No profile documents found under child
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => ChildProfileSetupPage()),
+          );
+          return;
+        }
+
+        // All checks passed, go to main dashboard
         if (!mounted) return;
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainDashboard()),
@@ -186,7 +226,7 @@ class _SignInPageState extends State<SignInPage> {
                       ),
                       GestureDetector(
                         onTap: () {
-                          // Navigate to SignUp page when tapped
+                          print('Navigating to SignUpPage'); // Debugging line
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -237,14 +277,5 @@ class _SignInPageState extends State<SignInPage> {
         ),
       ),
     );
-  }
-}
-
-class SignUpPage extends StatelessWidget {
-  const SignUpPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(body: Center(child: Text("Sign Up Page")));
   }
 }

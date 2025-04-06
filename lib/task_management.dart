@@ -91,7 +91,16 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
   final TextEditingController _taskNameController = TextEditingController();
   final TextEditingController _taskTimeController = TextEditingController();
   final TextEditingController _imageUrlController = TextEditingController();
+
   final String userId = FirebaseAuth.instance.currentUser!.uid;
+
+  CollectionReference<Map<String, dynamic>> get _taskCollection =>
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('child')
+          .doc('childProfile')
+          .collection('tasks');
 
   Future<void> _addTask() async {
     if (_taskNameController.text.isEmpty || _taskTimeController.text.isEmpty) {
@@ -113,12 +122,19 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
     }
 
     try {
-      await FirebaseFirestore.instance.collection('tasks').add({
-        'userId': userId,
+      final tasksRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('child')
+          .doc('childProfile')
+          .collection('tasks');
+
+      await tasksRef.add({
         'taskName': taskName,
         'taskTime': taskTime,
-        'image': imageUrl,
+        'imageUrl': imageUrl,
         'createdAt': FieldValue.serverTimestamp(),
+        'status': 'not done', // ✅ Add this line
       });
 
       ScaffoldMessenger.of(
@@ -138,12 +154,12 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
 
   Future<void> _editTask(
     String taskId,
-    String taskName,
-    String taskTime,
+    String name,
+    String time,
     String imageUrl,
   ) async {
-    _taskNameController.text = taskName;
-    _taskTimeController.text = taskTime;
+    _taskNameController.text = name;
+    _taskTimeController.text = time;
     _imageUrlController.text = imageUrl;
 
     showDialog(
@@ -152,7 +168,7 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
         return AlertDialog(
           title: const Text('Edit Task'),
           content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: _taskNameController,
@@ -173,11 +189,9 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
           actions: [
             ElevatedButton(
               onPressed: () async {
-                final taskName = _taskNameController.text;
-                final taskTime = _taskTimeController.text;
-                final imageUrl = _imageUrlController.text.trim();
-
-                if (taskName.isEmpty || taskTime.isEmpty || imageUrl.isEmpty) {
+                if (_taskNameController.text.isEmpty ||
+                    _taskTimeController.text.isEmpty ||
+                    _imageUrlController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Please fill all fields')),
                   );
@@ -185,20 +199,16 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
                 }
 
                 try {
-                  await FirebaseFirestore.instance
-                      .collection('tasks')
-                      .doc(taskId)
-                      .update({
-                        'taskName': taskName,
-                        'taskTime': taskTime,
-                        'image': imageUrl,
-                      });
+                  await _taskCollection.doc(taskId).update({
+                    'taskName': _taskNameController.text.trim(),
+                    'taskTime': _taskTimeController.text.trim(),
+                    'imageUrl': _imageUrlController.text.trim(),
+                  });
 
+                  Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Task updated successfully')),
                   );
-
-                  Navigator.pop(context); // Close the dialog
                 } catch (e) {
                   print('Error updating task: $e');
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -208,9 +218,9 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
               },
               child: const Text('Save Changes'),
             ),
-            ElevatedButton(
+            TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close the dialog without saving
+                Navigator.pop(context);
               },
               child: const Text('Cancel'),
             ),
@@ -242,7 +252,6 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _imageUrlController,
@@ -267,31 +276,39 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream:
-                    FirebaseFirestore.instance
-                        .collection('tasks')
-                        .where('userId', isEqualTo: userId)
+                    _taskCollection
+                        .orderBy('createdAt', descending: true)
                         .snapshots(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
+                  if (!snapshot.hasData)
                     return const Center(child: CircularProgressIndicator());
-                  }
+
                   final tasks = snapshot.data!.docs;
+                  if (tasks.isEmpty)
+                    return const Center(child: Text('No tasks found'));
+
                   return ListView.builder(
                     itemCount: tasks.length,
                     itemBuilder: (context, index) {
                       final task = tasks[index];
-                      final taskName = task['taskName'] ?? 'No Task Name';
-                      final taskTime = task['taskTime'] ?? 'No Time Set';
-                      final imageUrl = task['image'] ?? '';
+                      final data = task.data() as Map<String, dynamic>;
+                      final taskName = data['taskName'] ?? 'Unnamed Task';
+                      final taskTime = data['taskTime'] ?? 'No Time';
+                      final imageUrl = data['imageUrl'] ?? '';
 
                       return Card(
                         child: ListTile(
-                          title: Text(taskName),
-                          subtitle: Text(taskTime),
                           leading:
                               imageUrl.isNotEmpty
-                                  ? Image.network(imageUrl)
+                                  ? Image.network(
+                                    imageUrl,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                  )
                                   : const Icon(Icons.image),
+                          title: Text(taskName),
+                          subtitle: Text(taskTime),
                           trailing: IconButton(
                             icon: const Icon(Icons.edit),
                             onPressed: () {
