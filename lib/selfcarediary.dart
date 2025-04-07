@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -17,6 +18,8 @@ class AISelfCareDiaryPageState extends State<AISelfCareDiaryPage> {
   bool isChatOpen = false;
 
   final String openAIKey = "your_openai_api_key"; // Replace with actual API key
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String userId = "fjS6QHas0dSnrqB729lwmVaUqdk2"; // User ID to store data
 
   // Function to get AI response from OpenAI GPT
   Future<String> getAIResponse(String userInput) async {
@@ -49,6 +52,20 @@ class AISelfCareDiaryPageState extends State<AISelfCareDiaryPage> {
     }
   }
 
+  // Add entry to Firestore with timestamp
+  Future<void> _addLogToFirestore(String log) async {
+    try {
+      final Timestamp timestamp = Timestamp.now();
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('selfCareLogs')
+          .add({'log': log, 'timestamp': timestamp});
+    } catch (e) {
+      print("Error adding log: $e");
+    }
+  }
+
   void toggleChat() {
     setState(() {
       isChatOpen = !isChatOpen;
@@ -78,16 +95,41 @@ class AISelfCareDiaryPageState extends State<AISelfCareDiaryPage> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: logs.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(logs[index]),
-                  tileColor: const Color(0xFFD0F0C0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  contentPadding: const EdgeInsets.all(10),
+            child: StreamBuilder<QuerySnapshot>(
+              stream:
+                  _firestore
+                      .collection('users')
+                      .doc(userId)
+                      .collection('selfCareLogs')
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Error loading logs'));
+                }
+
+                final logs = snapshot.data!.docs;
+                return ListView.builder(
+                  itemCount: logs.length,
+                  itemBuilder: (context, index) {
+                    var logData = logs[index];
+                    var log = logData['log'];
+                    var timestamp =
+                        (logData['timestamp'] as Timestamp).toDate();
+                    return ListTile(
+                      title: Text(log),
+                      subtitle: Text('Date: ${timestamp.toLocal()}'),
+                      tileColor: const Color(0xFFD0F0C0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      contentPadding: const EdgeInsets.all(10),
+                    );
+                  },
                 );
               },
             ),
@@ -109,6 +151,7 @@ class AISelfCareDiaryPageState extends State<AISelfCareDiaryPage> {
                 setState(() {
                   logs.add(text);
                 });
+                _addLogToFirestore(text); // Add log to Firestore
                 logController.clear();
               },
             ),
