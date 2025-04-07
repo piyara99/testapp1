@@ -62,7 +62,7 @@ class AISelfCareDiaryPageState extends State<AISelfCareDiaryPage> {
           .collection('selfCareLogs')
           .add({'log': log, 'timestamp': timestamp});
     } catch (e) {
-      print("Error adding log: $e");
+      print("Error adding log to Firestore: $e");
     }
   }
 
@@ -148,11 +148,13 @@ class AISelfCareDiaryPageState extends State<AISelfCareDiaryPage> {
                 ),
               ),
               onSubmitted: (text) {
-                setState(() {
-                  logs.add(text);
-                });
-                _addLogToFirestore(text); // Add log to Firestore
-                logController.clear();
+                if (text.isNotEmpty) {
+                  setState(() {
+                    logs.add(text);
+                  });
+                  _addLogToFirestore(text); // Add log to Firestore
+                  logController.clear();
+                }
               },
             ),
           ),
@@ -212,16 +214,18 @@ class AISelfCareDiaryPageState extends State<AISelfCareDiaryPage> {
               ),
             ),
             onSubmitted: (text) async {
-              setState(() {
-                messages.add("You: $text");
-              });
+              if (text.isNotEmpty) {
+                setState(() {
+                  messages.add("You: $text");
+                });
 
-              String aiResponse = await getAIResponse(text);
-              setState(() {
-                messages.add("AI: $aiResponse");
-              });
+                String aiResponse = await getAIResponse(text);
+                setState(() {
+                  messages.add("AI: $aiResponse");
+                });
 
-              chatController.clear();
+                chatController.clear();
+              }
             },
           ),
         ],
