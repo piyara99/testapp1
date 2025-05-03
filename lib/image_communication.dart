@@ -28,17 +28,36 @@ class ImageCommunicationPageState extends State<ImageCommunicationPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text('Edit Image Communication'),
+            backgroundColor: Colors.blue[50],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Text(
+              'Edit Image',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.blue[600],
+              ),
+            ),
             content: TextField(
               controller: nameController,
-              decoration: InputDecoration(labelText: 'Label Name'),
+              decoration: InputDecoration(
+                labelText: 'Label Name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.blue),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Cancel',
-                  style: TextStyle(color: Colors.blue[400]),
+                  style: TextStyle(color: Colors.redAccent),
                 ),
               ),
               ElevatedButton(
@@ -50,6 +69,9 @@ class ImageCommunicationPageState extends State<ImageCommunicationPage> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue[400],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                 ),
                 child: Text('Save', style: TextStyle(color: Colors.white)),
               ),
@@ -67,74 +89,121 @@ class ImageCommunicationPageState extends State<ImageCommunicationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.blue[50],
       appBar: AppBar(
-        title: Text('Image Communication'),
-        backgroundColor: Colors.blue[400],
+        title: Text(
+          'Say It with Pictures!',
+          style: TextStyle(
+            fontFamily: 'ComicSans',
+            fontSize: 24,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.blue[300],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
+        ),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Select an Image to Communicate:',
+              'Tap a card to speak!',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue[400],
+                color: Colors.blue[800],
               ),
             ),
+            SizedBox(height: 10),
             Expanded(
               child: GridView.builder(
                 padding: EdgeInsets.all(8),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.85,
                 ),
                 itemCount: images.length,
                 itemBuilder: (context, index) {
-                  return Card(
-                    color: Colors.blue[50],
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(images[index]['image'], height: 80),
-                        SizedBox(height: 8),
-                        Text(
-                          images[index]['name'],
-                          style: TextStyle(color: Colors.blue[600]),
-                        ),
-                        Row(
+                  return GestureDetector(
+                    onTap: () {
+                      // Optional: play sound or give visual cue here
+                    },
+                    child: Card(
+                      elevation: 6,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      color: Colors.white,
+                      shadowColor: Colors.blue[200],
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            IconButton(
-                              icon: Icon(Icons.edit, color: Colors.blue[400]),
-                              onPressed: () => _editImage(index),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: Image.asset(
+                                images[index]['image'],
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
                             ),
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red[400]),
-                              onPressed: () => _deleteImage(index),
+                            SizedBox(height: 10),
+                            Text(
+                              images[index]['name'],
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit,
+                                    color: Colors.orangeAccent,
+                                  ),
+                                  onPressed: () => _editImage(index),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete,
+                                    color: Colors.red[400],
+                                  ),
+                                  onPressed: () => _deleteImage(index),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   );
                 },
               ),
             ),
-            Center(
-              child: ElevatedButton(
-                onPressed: _addImage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[400],
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                ),
-                child: Text(
-                  'Add New Image',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+            SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _addImage,
+              icon: Icon(Icons.add, color: Colors.white),
+              label: Text(
+                'Add New Image',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[400],
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
             ),

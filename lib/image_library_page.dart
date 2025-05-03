@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'image_display_page.dart'; // Import the new page
+import 'image_display_page.dart';
 
 class ImageLibraryPage extends StatefulWidget {
   const ImageLibraryPage({super.key});
@@ -15,20 +15,54 @@ class _ImageLibraryPageState extends State<ImageLibraryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Image Library')),
+      backgroundColor: Colors.blue[50],
+      appBar: AppBar(
+        title: const Text(
+          'My Picture Library',
+          style: TextStyle(
+            fontFamily: 'ComicSans',
+            fontSize: 22,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.blue[300],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
+        ),
+      ),
       body: Column(
         children: [
+          // Search Field
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: const InputDecoration(
-                labelText: 'Search by caption',
-                prefixIcon: Icon(Icons.search),
+            padding: const EdgeInsets.all(12.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.1),
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
               ),
-              onChanged:
-                  (value) => setState(() => _searchTerm = value.toLowerCase()),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search for a picture...',
+                  prefixIcon: Icon(Icons.search, color: Colors.blue[400]),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
+                ),
+                onChanged:
+                    (value) =>
+                        setState(() => _searchTerm = value.toLowerCase()),
+              ),
             ),
           ),
+
+          // Image Grid
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream:
@@ -48,22 +82,30 @@ class _ImageLibraryPageState extends State<ImageLibraryPage> {
                     }).toList();
 
                 if (docs.isEmpty) {
-                  return const Center(child: Text("No images found"));
+                  return const Center(
+                    child: Text(
+                      "No pictures found 🖼️",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
                 }
 
                 return GridView.builder(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(12),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
                   ),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     final doc = docs[index];
                     return GestureDetector(
                       onTap: () {
-                        // Navigate to the ImageDisplayPage
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -75,14 +117,45 @@ class _ImageLibraryPageState extends State<ImageLibraryPage> {
                           ),
                         );
                       },
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: Image.network(doc['url'], fit: BoxFit.cover),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(doc['caption'], overflow: TextOverflow.ellipsis),
-                        ],
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue[100],
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.15),
+                              blurRadius: 5,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(15),
+                                ),
+                                child: Image.network(
+                                  doc['url'],
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(6.0),
+                              child: Text(
+                                doc['caption'],
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue[800],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },

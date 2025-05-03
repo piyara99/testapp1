@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Make sure this is imported
+import 'package:firebase_auth/firebase_auth.dart';
 import 'task_page.dart';
 import 'image_library_page.dart';
 
@@ -16,27 +16,39 @@ class ChildTasksPage extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.purple[50],
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: Colors.purple),
+              decoration: BoxDecoration(color: Colors.purple[300]),
               child: Text(
-                'Menu',
+                'Welcome 🎈',
                 style: TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
-            ListTile(title: Text('Profile'), onTap: () {}),
-            ListTile(title: Text('Settings'), onTap: () {}),
+            ListTile(
+              leading: Icon(Icons.person, color: Colors.purple),
+              title: Text('Profile'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: Icon(Icons.settings, color: Colors.purple),
+              title: Text('Settings'),
+              onTap: () {},
+            ),
           ],
         ),
       ),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Colors.purple),
+        backgroundColor: Colors.purple[300],
+        elevation: 4,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          'Your Tasks 📝',
+          style: TextStyle(color: Colors.white),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -50,39 +62,30 @@ class ChildTasksPage extends StatelessWidget {
         children: [
           // Greeting Section
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
               children: [
                 Text(
-                  'Miguel!',
+                  'Hello, Miguel! 👋',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: Colors.purple,
+                    color: Colors.purple[800],
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Ready for another day?',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                const SizedBox(height: 6),
+                const Text(
+                  'Are you ready to conquer today’s tasks?',
+                  style: TextStyle(fontSize: 16, color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 16),
-                Text(
-                  'Tasks',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.purple,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
 
-          // Task Grid from Firestore
+          // Task Grid
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream:
@@ -92,22 +95,27 @@ class ChildTasksPage extends StatelessWidget {
                       .collection('child')
                       .doc('childProfile')
                       .collection('tasks')
-                      .where('status', isNotEqualTo: 'done') // Filter tasks
+                      .where('status', isNotEqualTo: 'done')
                       .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(child: Text('No tasks available.'));
+                  return const Center(
+                    child: Text(
+                      '🎉 No tasks left! Great job!',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  );
                 }
 
                 final tasks = snapshot.data!.docs;
 
                 return GridView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: tasks.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 15,
                     mainAxisSpacing: 15,
@@ -120,46 +128,65 @@ class ChildTasksPage extends StatelessWidget {
 
                     return InkWell(
                       onTap: () {
-                        // Pass the task data to the TaskPage
-                        final taskName = task['taskName'] ?? 'Unnamed Task';
-                        final imageUrl = task['imageUrl'] ?? '';
-                        final taskTime = task['taskTime'] ?? 'N/A';
-                        final taskId = task.id;
-
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder:
                                 (context) => TaskPage(
-                                  taskId: taskId, // Pass the taskId
-                                  taskName: taskName, // Pass the taskName
-                                  imageUrl: imageUrl, // Pass the imageUrl
-                                  taskTime:
-                                      taskTime, // Pass the taskTime (if needed)
+                                  taskId: task.id,
+                                  taskName: title,
+                                  imageUrl: imageUrl,
+                                  taskTime: task['taskTime'] ?? 'N/A',
                                 ),
                           ),
                         );
                       },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Stack(
-                          fit: StackFit.expand,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.purple.withOpacity(0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
                           children: [
-                            imageUrl.startsWith('http')
-                                ? Image.network(imageUrl, fit: BoxFit.cover)
-                                : Image.asset(
-                                  'assets/default_task.png',
-                                  fit: BoxFit.cover,
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(15),
                                 ),
-                            Align(
-                              alignment: Alignment.bottomCenter,
-                              child: Container(
-                                color: Colors.black54,
-                                padding: EdgeInsets.all(4),
-                                child: Text(
-                                  title,
-                                  style: TextStyle(color: Colors.white),
-                                  overflow: TextOverflow.ellipsis,
+                                child:
+                                    imageUrl.startsWith('http')
+                                        ? Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                        )
+                                        : Image.asset(
+                                          'assets/default_task.png',
+                                          fit: BoxFit.cover,
+                                        ),
+                              ),
+                            ),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.purple[100],
+                                borderRadius: const BorderRadius.vertical(
+                                  bottom: Radius.circular(15),
+                                ),
+                              ),
+                              child: Text(
+                                title,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -175,16 +202,16 @@ class ChildTasksPage extends StatelessWidget {
         ],
       ),
 
-      // Navigate to Image Library Page
+      // Image Library Button
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => ImageLibraryPage()),
+            MaterialPageRoute(builder: (context) => const ImageLibraryPage()),
           );
         },
         backgroundColor: Colors.purple,
-        child: Icon(Icons.image, color: Colors.white),
+        child: const Icon(Icons.image, color: Colors.white),
       ),
     );
   }
