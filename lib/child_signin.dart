@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -14,6 +16,8 @@ class MyApp extends StatelessWidget {
 }
 
 class RoleSelectionPage extends StatelessWidget {
+  const RoleSelectionPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,7 +87,12 @@ class RoleOption extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  RoleOption({required this.imagePath, required this.label, required this.onTap});
+  const RoleOption({
+    super.key,
+    required this.imagePath,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -98,11 +107,7 @@ class RoleOption extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Image.asset(
-              imagePath,
-              width: 60,
-              height: 60,
-            ),
+            Image.asset(imagePath, width: 60, height: 60),
             SizedBox(width: 20),
             Text(
               label,

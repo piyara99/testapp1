@@ -37,6 +37,13 @@ dependencies:
   firebase_storage: ^12.4.4  # Accepts any version from 10.0.0 upwards
   cloud_firestore: ^5.6.5  # Ensures compatibility with firebase_core version 2.x.x
   image_picker: ^1.1.2
+  flutter_local_notifications: ^17.0.0
+  timezone: ^0.9.2
+  android_intent_plus: 5.3.0
+  permission_handler: ^11.3.0 
+  calendar_view: ^1.4.0
+  table_calendar: ^3.0.9
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -85,6 +92,7 @@ flutter:
     - assets/profile.png
     - assets/head_sketches1.png
     - assets/head_sketches2.png
+    - assets/logo.jpg
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

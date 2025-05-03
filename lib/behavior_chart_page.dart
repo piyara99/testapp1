@@ -63,8 +63,9 @@ class _BehaviorChartPageState extends State<BehaviorChartPage> {
                           showTitles: true,
                           getTitlesWidget: (value, meta) {
                             int index = value.toInt();
-                            if (index >= behaviors.length)
+                            if (index >= behaviors.length) {
                               return const SizedBox.shrink();
+                            }
                             return SideTitleWidget(
                               space: 6,
                               meta: meta,
