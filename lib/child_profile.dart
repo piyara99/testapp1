@@ -5,6 +5,8 @@ import 'task_page.dart';
 import 'image_library_page.dart';
 
 class ChildTasksPage extends StatelessWidget {
+  const ChildTasksPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';

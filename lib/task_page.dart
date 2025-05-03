@@ -1,23 +1,39 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart'; // Add this import for date formatting
 
 class TaskPage extends StatelessWidget {
   final String taskId;
   final String taskName;
   final String imageUrl;
-  final String taskTime; // Add taskTime parameter
+  final dynamic taskTime; // Use dynamic to handle different types
 
   const TaskPage({
     required this.taskId,
     required this.taskName,
     required this.imageUrl,
-    required this.taskTime, // Include taskTime in the constructor
+    required this.taskTime, // Pass the taskTime as dynamic
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Format the task time if it's a Timestamp
+    String formattedTime = 'N/A'; // Default value
+    try {
+      if (taskTime is Timestamp) {
+        // If it's a Timestamp, convert it to DateTime and format it
+        DateTime dateTime = taskTime.toDate();
+        formattedTime = DateFormat('hh:mm a').format(dateTime);
+      } else if (taskTime is String) {
+        // If it's already a string, just use it
+        formattedTime = taskTime;
+      }
+    } catch (e) {
+      print("Error formatting time: $e");
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(taskName)),
       body: Padding(
@@ -39,7 +55,7 @@ class TaskPage extends StatelessWidget {
 
             // Display the task time
             Text(
-              'Task Time: $taskTime',
+              'Task Time: $formattedTime',
               style: const TextStyle(fontSize: 18, color: Colors.grey),
             ),
             const SizedBox(height: 20),
@@ -50,11 +66,9 @@ class TaskPage extends StatelessWidget {
                 // Success button to mark the task as done
                 ElevatedButton(
                   onPressed: () async {
-                    // Get the userId from Firebase Authentication
                     var userId = FirebaseAuth.instance.currentUser?.uid;
 
                     if (userId == null) {
-                      // Handle case where user is not logged in
                       print('No user is logged in');
                       return;
                     }
@@ -62,17 +76,23 @@ class TaskPage extends StatelessWidget {
                     // Construct the document reference using the userId
                     var taskRef = FirebaseFirestore.instance
                         .collection('users')
-                        .doc(userId) // Use the userId here
+                        .doc(userId)
                         .collection('child')
                         .doc('childProfile')
                         .collection('tasks')
-                        .doc(taskId); // Ensure taskId is valid
+                        .doc(taskId);
 
                     // Check if the document exists
                     var docSnapshot = await taskRef.get();
                     if (docSnapshot.exists) {
                       // If the document exists, update its status
                       await taskRef.update({'status': 'done'});
+                      // Show confirmation message to the user
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('$taskName marked as completed!'),
+                        ),
+                      );
                     } else {
                       // Handle the error if the document doesn't exist
                       print('Document not found');
@@ -95,17 +115,51 @@ class TaskPage extends StatelessWidget {
 
                 // Fail button to mark the task as failed
                 ElevatedButton(
-                  onPressed: () {
-                    // Mark task as failed
-                    FirebaseFirestore.instance
+                  onPressed: () async {
+                    var userId = FirebaseAuth.instance.currentUser?.uid;
+
+                    if (userId == null) {
+                      print('No user is logged in');
+                      return;
+                    }
+
+                    // Construct the document reference using the userId
+                    var taskRef = FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userId)
+                        .collection('child')
+                        .doc('childProfile')
                         .collection('tasks')
-                        .doc(taskId)
-                        .update({'status': 'failed'});
+                        .doc(taskId);
+
+                    // Check if the document exists
+                    var docSnapshot = await taskRef.get();
+                    if (docSnapshot.exists) {
+                      // If the document exists, update its status
+                      await taskRef.update({'status': 'failed'});
+                      // Show failure message to the user
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('$taskName marked as failed!')),
+                      );
+                    } else {
+                      // Handle the error if the document doesn't exist
+                      print('Document not found');
+                    }
 
                     // Close and go back
                     Navigator.pop(context);
                   },
-                  child: const Text('Fail'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[400],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text(
+                    'Fail',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
                 ),
               ],
             ),

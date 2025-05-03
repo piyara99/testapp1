@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'main_dashboard.dart'; // Import the dashboard page
 
 class ChildProfileSetupPage extends StatefulWidget {
+  const ChildProfileSetupPage({super.key});
+
   @override
   _ChildProfileSetupPageState createState() => _ChildProfileSetupPageState();
 }

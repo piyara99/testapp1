@@ -280,12 +280,14 @@ class _TaskManagementPageState extends State<TaskManagementPage> {
                         .orderBy('createdAt', descending: true)
                         .snapshots(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData)
+                  if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
+                  }
 
                   final tasks = snapshot.data!.docs;
-                  if (tasks.isEmpty)
+                  if (tasks.isEmpty) {
                     return const Center(child: Text('No tasks found'));
+                  }
 
                   return ListView.builder(
                     itemCount: tasks.length,
