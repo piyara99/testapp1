@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:testapp/child_profile.dart';
+import 'package:testapp/models/child_profile_ui.dart'; // Ensure this matches your file structure
 import 'caregiver_dashboard.dart'; // Import the caregiver_dashboard.dart file
 
 void main() {
@@ -97,21 +97,22 @@ class MainDashboard extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ChildTasksPage(),
+                                builder:
+                                    (context) =>
+                                        const ChildHomePage(), // ✅ Navigates to child_profile_ui.dart
                               ),
                             );
                           },
                         ),
-
                         ProfileCard(
                           title: 'Caregiver',
                           icon: Icons.person,
                           onTap: () {
-                            // Navigate to Caregiver Dashboard
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => CaregiverDashboard(),
+                                builder:
+                                    (context) => const CaregiverDashboard(),
                               ),
                             );
                           },

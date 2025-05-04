@@ -64,6 +64,7 @@ class _BehaviorTrackingPageState extends State<BehaviorTrackingPage> {
         specialNotesController.clear();
       });
 
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Behavior data saved successfully!')),
       );
