@@ -1,375 +1,453 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import 'package:testapp/behavior_tracking_home_page.dart';
 import 'package:testapp/image_upload_page.dart';
 import 'package:testapp/main_dashboard.dart';
+import 'package:testapp/planner_page.dart';
 import 'package:testapp/reminder_page.dart';
 import 'package:testapp/signin.dart' as signin;
-import 'mood_tracking.dart';
-import 'selfcarediary.dart';
-import 'settings_page.dart';
-import 'reports_insights_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:testapp/add_task_page.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Autism Care Dashboard',
-      theme: ThemeData(
-        primaryColor: Colors.white,
-        scaffoldBackgroundColor: const Color(0xFFF5F6FA),
-        hintColor: Colors.white,
-      ),
-      home: const CaregiverDashboard(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
+import 'package:testapp/mood_tracking.dart';
+import 'package:testapp/selfcarediary.dart';
+import 'package:testapp/settings_page.dart';
+import 'package:testapp/reports_insights_page.dart';
 
 class CaregiverDashboard extends StatefulWidget {
   const CaregiverDashboard({super.key});
 
   @override
-  _CaregiverDashboardState createState() => _CaregiverDashboardState();
+  State<CaregiverDashboard> createState() => _CaregiverDashboardState();
 }
 
 class _CaregiverDashboardState extends State<CaregiverDashboard> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  User? getCurrentUser() {
-    return _auth.currentUser;
+  User? getCurrentUser() => _auth.currentUser;
+
+  Future<double> _getTaskCompletionPercentage() async {
+    final userId = _auth.currentUser?.uid;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    final snapshot =
+        await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('child')
+            .doc('childProfile')
+            .collection('tasks')
+            .doc(today)
+            .collection('taskList')
+            .get();
+
+    if (snapshot.docs.isEmpty) return 0;
+
+    final total = snapshot.docs.length;
+    final completed =
+        snapshot.docs
+            .where((doc) => doc['status']?.toLowerCase() == 'completed')
+            .length;
+
+    return (completed / total) * 100;
+  }
+
+  Future<Map<String, List<Map<String, dynamic>>>>
+  _getUpcomingReminders() async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return {'today': [], 'tomorrow': []};
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    final snapshot =
+        await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('reminders')
+            .get();
+
+    final Map<String, List<Map<String, dynamic>>> groupedReminders = {
+      'today': [],
+      'tomorrow': [],
+    };
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final timestamp = data['time'];
+      if (timestamp is! Timestamp) continue;
+
+      final time = timestamp.toDate();
+      final dateOnly = DateTime(time.year, time.month, time.day);
+      data['parsedTime'] = time;
+
+      if (dateOnly == today) {
+        groupedReminders['today']!.add(data);
+      } else if (dateOnly == tomorrow) {
+        groupedReminders['tomorrow']!.add(data);
+      }
+    }
+
+    // Sort each group by time
+    groupedReminders['today']!.sort(
+      (a, b) =>
+          (a['parsedTime'] as DateTime).compareTo(b['parsedTime'] as DateTime),
+    );
+    groupedReminders['tomorrow']!.sort(
+      (a, b) =>
+          (a['parsedTime'] as DateTime).compareTo(b['parsedTime'] as DateTime),
+    );
+
+    return groupedReminders;
   }
 
   @override
   Widget build(BuildContext context) {
-    User? user = getCurrentUser();
-    String userId = user?.uid ?? '';
+    final user = getCurrentUser();
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
         title: const Text(
           'Caregiver Dashboard',
           style: TextStyle(color: Colors.black),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                ),
+          ),
+        ],
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            UserAccountsDrawerHeader(
-              accountName: Text(user?.displayName ?? 'Caregiver Name'),
-              accountEmail: Text(user?.email ?? 'caregiver@example.com'),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Colors.blue[400]),
+      drawer: _buildDrawer(user),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildTaskStatusCard(),
+          const SizedBox(height: 16),
+          _buildRemindersCard(), // ✅ This now works
+          const SizedBox(height: 24),
+          const Text(
+            "Quick Access",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _buildQuickCard(
+                'Behavior Tracking',
+                Icons.track_changes,
+                Colors.blue,
+                BehaviorTrackingHomePage(),
               ),
-              decoration: BoxDecoration(color: Colors.blue[400]),
+              _buildQuickCard(
+                'Image Communication',
+                Icons.image,
+                Colors.green,
+                ImageUploadPage(),
+              ),
+              _buildQuickCard(
+                'Mood Tracking',
+                Icons.mood,
+                Colors.orange,
+                const MoodTrackingPage(),
+              ),
+              _buildQuickCard(
+                'Manage Tasks',
+                Icons.list_alt,
+                Colors.purple,
+                PlannerPage(),
+              ),
+              _buildQuickCard(
+                'Reminders',
+                Icons.notifications,
+                Colors.red,
+                ReminderPage(),
+              ),
+              _buildQuickCard(
+                'Reports & Insights',
+                Icons.analytics,
+                Colors.teal,
+                const ReportsInsightsPage(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRemindersCard() {
+    return FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
+      future: _getUpcomingReminders(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final grouped = snapshot.data!;
+        final todayReminders = grouped['today']!;
+        final tomorrowReminders = grouped['tomorrow']!;
+
+        if (todayReminders.isEmpty && tomorrowReminders.isEmpty) {
+          return const Text('No reminders for today or tomorrow.');
+        }
+
+        return Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Upcoming Reminders',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+
+                if (todayReminders.isNotEmpty) ...[
+                  const Text(
+                    'Today',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  for (var reminder in todayReminders)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(reminder['title'] ?? 'Untitled'),
+                      subtitle: Text(reminder['description'] ?? ''),
+                      trailing: Text(
+                        DateFormat('h:mm a').format(reminder['parsedTime']),
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      leading: const Icon(Icons.notifications),
+                    ),
+                  const SizedBox(height: 16),
+                ],
+
+                if (tomorrowReminders.isNotEmpty) ...[
+                  const Text(
+                    'Tomorrow',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  for (var reminder in tomorrowReminders)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(reminder['title'] ?? 'Untitled'),
+                      subtitle: Text(reminder['description'] ?? ''),
+                      trailing: Text(
+                        DateFormat('h:mm a').format(reminder['parsedTime']),
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      leading: const Icon(Icons.notifications),
+                    ),
+                ],
+              ],
             ),
-            ListTile(
-              title: const Text('Dashboard'),
-              onTap: () {
-                Navigator.pushReplacement(
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDrawer(User? user) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          UserAccountsDrawerHeader(
+            accountName: Text(user?.displayName ?? 'Caregiver'),
+            accountEmail: Text(user?.email ?? 'caregiver@example.com'),
+            currentAccountPicture: const CircleAvatar(
+              child: Icon(Icons.person, color: Colors.blue),
+              backgroundColor: Colors.white,
+            ),
+            decoration: BoxDecoration(color: Colors.blue[400]),
+          ),
+          ListTile(
+            title: const Text('Dashboard'),
+            onTap:
+                () => Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const MainDashboard(),
                   ),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Behavior Tracking'),
-              onTap: () {
-                Navigator.push(
+                ),
+          ),
+          ListTile(
+            title: const Text('Behavior Tracking'),
+            onTap:
+                () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => BehaviorTrackingHomePage(),
                   ),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('AI Self-Care Diary'),
-              onTap: () {
-                Navigator.push(
+                ),
+          ),
+          ListTile(
+            title: const Text('AI Self-Care Diary'),
+            onTap:
+                () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => AISelfCareDiaryPage(),
                   ),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Mood Tracking'),
-              onTap: () {
-                Navigator.push(
+                ),
+          ),
+          ListTile(
+            title: const Text('Mood Tracking'),
+            onTap:
+                () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const MoodTrackingPage(),
                   ),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Manage Tasks'),
-              onTap: () {
-                Navigator.push(
+                ),
+          ),
+          ListTile(
+            title: const Text('Manage Tasks'),
+            onTap:
+                () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => AddTaskPage()),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Image Communication'),
-              onTap: () {
-                Navigator.push(
+                  MaterialPageRoute(builder: (context) => PlannerPage()),
+                ),
+          ),
+          ListTile(
+            title: const Text('Image Communication'),
+            onTap:
+                () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ImageUploadPage()),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Reminders'),
-              onTap: () {
-                Navigator.push(
+                ),
+          ),
+          ListTile(
+            title: const Text('Reminders'),
+            onTap:
+                () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ReminderPage()),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Reports & Insights'),
-              onTap: () {
-                Navigator.push(
+                ),
+          ),
+          ListTile(
+            title: const Text('Reports & Insights'),
+            onTap:
+                () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const ReportsInsightsPage(),
                   ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.push(
+                ),
+          ),
+          ListTile(
+            title: const Text('Settings'),
+            leading: const Icon(Icons.settings),
+            onTap:
+                () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const SettingsPage()),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Log Out'),
-              onTap: () {
-                _auth.signOut();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const signin.SignInPage(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Upcoming Reminders Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    'Upcoming Reminders',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              StreamBuilder<QuerySnapshot>(
-                stream:
-                    _firestore
-                        .collection('users')
-                        .doc(userId)
-                        .collection('reminders')
-                        .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Text(
-                      'No upcoming reminders yet.',
-                      style: TextStyle(color: Colors.grey),
-                    );
-                  }
-
-                  final now = DateTime.now();
-
-                  // Filter reminders with future scheduledTime
-                  final upcomingReminders =
-                      snapshot.data!.docs.where((doc) {
-                        final timestamp = doc['time'];
-                        if (timestamp is Timestamp) {
-                          return timestamp.toDate().isAfter(now);
-                        }
-                        return false;
-                      }).toList();
-
-                  if (upcomingReminders.isEmpty) {
-                    return const Text(
-                      'No upcoming reminders yet.',
-                      style: TextStyle(color: Colors.grey),
-                    );
-                  }
-
-                  return Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children:
-                        upcomingReminders.map((doc) {
-                          return Container(
-                            width: (MediaQuery.of(context).size.width / 2) - 24,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color:
-                                  Colors
-                                      .primaries[doc.id.hashCode %
-                                          Colors.primaries.length]
-                                      .shade100,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  doc['title'] ?? 'No Title',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  doc['description'] ?? '',
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 30),
-
-              // Child Tasks Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Child\'s Tasks',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle, color: Colors.blue),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => AddTaskPage()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Inside your Child's Tasks Section (replace the previous one)
-              Container(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream:
-                      _firestore
-                          .collection('users')
-                          .doc(userId)
-                          .collection('child')
-                          .doc('childProfile')
-                          .collection('tasks')
-                          .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Center(child: Text('No tasks available.'));
-                    }
-
-                    var tasks = snapshot.data!.docs;
-
-                    return Column(
-                      children:
-                          tasks.map((taskDoc) {
-                            String status = taskDoc['status'] ?? 'not done';
-                            Color lineColor =
-                                status == 'done' ? Colors.green : Colors.red;
-
-                            return Container(
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.2),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    taskDoc['taskName'] ?? 'Task',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    height: 4,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: lineColor,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                    );
-                  },
                 ),
+          ),
+          ListTile(
+            title: const Text('Log Out'),
+            onTap: () {
+              _auth.signOut();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const signin.SignInPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskStatusCard() {
+    return FutureBuilder<double>(
+      future: _getTaskCompletionPercentage(),
+      builder: (context, snapshot) {
+        final percentage = snapshot.data ?? 0;
+
+        return Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Task Completion Status',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: percentage / 100,
+                  backgroundColor: Colors.grey[300],
+                  color: Colors.green,
+                  minHeight: 10,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${percentage.toStringAsFixed(1)}% completed',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildQuickCard(
+    String title,
+    IconData icon,
+    Color color,
+    Widget page,
+  ) {
+    return GestureDetector(
+      onTap:
+          () =>
+              Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.4,
+        height: 120,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 36),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

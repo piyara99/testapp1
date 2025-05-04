@@ -4,6 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'signin.dart';
 import 'main_dashboard.dart';
+import 'package:testapp/models/picture_exchange.dart'; // <-- create this file if not already done
+import 'package:testapp/models/visual_schedule_page.dart';
+import 'models/rewards_page.dart';
+import 'models/guided_routine_page.dart';
+import 'models/memory_match.dart';
+import 'models/sorting_activity.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +25,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Caring for Carers',
-      home: const SplashScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/visual_schedule': (context) => const VisualSchedulePage(),
+        //'/rewards': (context) => const RewardsPage(),
+        '/guided_routine': (context) => const GuidedRoutinePage(),
+        //'/picture_exchange': (context) => const PictureExchangePage(),
+        '/memory_match': (context) => const MemoryMatchPage(),
+        '/sorting_activity': (context) => const SortingActivityPage(),
+      },
     );
   }
 }

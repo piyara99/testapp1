@@ -96,6 +96,10 @@ flutter:
     - assets/head_sketches1.png
     - assets/head_sketches2.png
     - assets/logo.jpg
+    - assets/animations/flower_animation.json
+    - assets/animations/robot_guide.json
+
+    
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
