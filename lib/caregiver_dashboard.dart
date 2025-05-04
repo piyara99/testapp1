@@ -213,20 +213,38 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
+
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return const Text(
-                      'No reminders for today.',
+                      'No upcoming reminders yet.',
                       style: TextStyle(color: Colors.grey),
                     );
                   }
 
-                  var reminders = snapshot.data!.docs;
+                  final now = DateTime.now();
+
+                  // Filter reminders with future scheduledTime
+                  final upcomingReminders =
+                      snapshot.data!.docs.where((doc) {
+                        final timestamp = doc['time'];
+                        if (timestamp is Timestamp) {
+                          return timestamp.toDate().isAfter(now);
+                        }
+                        return false;
+                      }).toList();
+
+                  if (upcomingReminders.isEmpty) {
+                    return const Text(
+                      'No upcoming reminders yet.',
+                      style: TextStyle(color: Colors.grey),
+                    );
+                  }
 
                   return Wrap(
                     spacing: 10,
                     runSpacing: 10,
                     children:
-                        reminders.map((doc) {
+                        upcomingReminders.map((doc) {
                           return Container(
                             width: (MediaQuery.of(context).size.width / 2) - 24,
                             padding: const EdgeInsets.all(16),
