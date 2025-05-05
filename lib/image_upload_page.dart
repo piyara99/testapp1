@@ -123,9 +123,34 @@ class _ImageUploadPageState extends State<ImageUploadPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Image Upload'),
-        backgroundColor: Colors.blue[400],
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(
+              context,
+            ); // Or replace with a specific route if needed
+          },
+        ),
+        title: Row(
+          children: const [
+            CircleAvatar(
+              backgroundColor: Colors.deepPurple,
+              child: Icon(Icons.track_changes, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Image Upload',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -136,7 +161,7 @@ class _ImageUploadPageState extends State<ImageUploadPage> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue[400],
+                color: Colors.deepPurple,
               ),
             ),
             TextField(
@@ -151,7 +176,8 @@ class _ImageUploadPageState extends State<ImageUploadPage> {
             ElevatedButton(
               onPressed: _addImage,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[400],
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
               ),
               child: const Text("Add Image"),
             ),
@@ -167,24 +193,37 @@ class _ImageUploadPageState extends State<ImageUploadPage> {
                 itemCount: images.length,
                 itemBuilder: (context, index) {
                   return Card(
-                    color: Colors.blue[50],
+                    color:
+                        Colors
+                            .deepPurple
+                            .shade100, // Light purple box background
+                    elevation: 4, // Subtle shadow
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        12,
+                      ), // Rounded corners
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.network(
-                          images[index]['image'],
-                          height: 80,
-                        ), // Display image from URL
-                        SizedBox(height: 8),
+                        Image.network(images[index]['image'], height: 80),
+                        const SizedBox(height: 8),
                         Text(
                           images[index]['name'],
-                          style: TextStyle(color: Colors.blue[600]),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.deepPurple[800],
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             IconButton(
-                              icon: Icon(Icons.edit, color: Colors.blue[400]),
+                              icon: Icon(
+                                Icons.edit,
+                                color: Colors.deepPurple[700],
+                              ),
                               onPressed: () => _editImage(index),
                             ),
                             IconButton(

@@ -201,6 +201,7 @@ class _BehaviorLogPageState extends State<BehaviorLogPage> {
                         ],
                       ),
                       trailing: Column(
+                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
@@ -219,6 +220,12 @@ class _BehaviorLogPageState extends State<BehaviorLogPage> {
                                   Icons.edit,
                                   color: Colors.blue,
                                 ),
+                                iconSize:
+                                    20, // Make it smaller to reduce height
+                                padding:
+                                    EdgeInsets.zero, // Remove default padding
+                                constraints:
+                                    BoxConstraints(), // Remove default size constraints
                                 onPressed: () {
                                   _showEditTriggerDialog(
                                     triggerId,
@@ -233,6 +240,9 @@ class _BehaviorLogPageState extends State<BehaviorLogPage> {
                                   Icons.delete,
                                   color: Colors.red,
                                 ),
+                                iconSize: 20,
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
                                 onPressed: () {
                                   _deleteTrigger(triggerId);
                                 },

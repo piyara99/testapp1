@@ -30,7 +30,6 @@ class _BehaviorTrackingHomePageState extends State<BehaviorTrackingHomePage> {
       const BehaviorTrackingPage(),
       const BehaviorCalendarPage(),
       const BehaviorLogPage(),
-      const Center(child: Text('Routines & Tasks (Coming Soon)')),
       BehaviorChartPage(userId: userId), // ✅ userId now defined above
     ];
 
@@ -56,7 +55,6 @@ class _BehaviorTrackingHomePageState extends State<BehaviorTrackingHomePage> {
             icon: Icon(Icons.list_alt),
             label: 'Behavior Log',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.task), label: 'Routines'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Chart'),
         ],
       ),
