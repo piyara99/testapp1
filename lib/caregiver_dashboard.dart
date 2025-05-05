@@ -108,7 +108,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Color(0xFFD8CFF4),
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
         title: const Text(
@@ -432,19 +432,19 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
         width: MediaQuery.of(context).size.width * 0.4,
         height: 120,
         decoration: BoxDecoration(
-          color: color,
+          color: color.withOpacity(0.2), // Lighten the background
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 36),
+              Icon(icon, color: color, size: 36), // Keep original icon color
               const SizedBox(height: 10),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: color, // Match the icon color
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,

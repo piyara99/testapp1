@@ -23,6 +23,16 @@ class _BehaviorLogPageState extends State<BehaviorLogPage> {
     'Last 30 days',
   ];
 
+  final List<String> triggerCategories = [
+    'Emotional',
+    'Environmental',
+    'Social',
+    'Physiological',
+    'Situational',
+  ];
+
+  String selectedCategory = 'All';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,7 +75,6 @@ class _BehaviorLogPageState extends State<BehaviorLogPage> {
           ],
         ),
       ),
-
       body: Column(
         children: [
           _buildToggleButtons(),
@@ -74,7 +83,7 @@ class _BehaviorLogPageState extends State<BehaviorLogPage> {
             child: IndexedStack(
               index: selectedIndex,
               children: [
-                _buildSymptomsPlaceholder(), // You can create a placeholder widget
+                _buildTriggersList(), // Replace Symptoms with Triggers
                 _buildBehaviorAverageList(),
                 _buildTrendChart(),
               ],
@@ -85,28 +94,347 @@ class _BehaviorLogPageState extends State<BehaviorLogPage> {
     );
   }
 
-  Widget _buildSymptomsPlaceholder() {
-    return Center(
-      child: Text(
-        'Symptoms data coming soon!',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.deepPurple,
+  Widget _buildTriggersList() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Category:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              DropdownButton<String>(
+                value: selectedCategory,
+                items:
+                    ['All', ...triggerCategories]
+                        .map(
+                          (cat) =>
+                              DropdownMenuItem(value: cat, child: Text(cat)),
+                        )
+                        .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedCategory = value!;
+                  });
+                },
+              ),
+            ],
+          ),
         ),
-      ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: ElevatedButton(
+            onPressed: _showAddTriggerDialog,
+            child: const Text('Add Trigger'),
+          ),
+        ),
+        // Use Column with a scrollable child only if needed
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user?.uid)
+                    .collection('triggers')
+                    .orderBy('date', descending: true)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final docs =
+                  snapshot.data!.docs.where((doc) {
+                    if (selectedCategory == 'All') return true;
+                    return doc['category'] == selectedCategory;
+                  }).toList();
+
+              if (docs.isEmpty) {
+                return const Center(child: Text('No triggers found.'));
+              }
+
+              // Count frequency per trigger
+              final Map<String, int> triggerFrequency = {};
+              for (var doc in docs) {
+                final name = doc['name'];
+                triggerFrequency[name] = (triggerFrequency[name] ?? 0) + 1;
+              }
+
+              return ListView.builder(
+                shrinkWrap: true, // Ensures ListView only takes necessary space
+                itemCount: docs.length,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemBuilder: (context, index) {
+                  final trigger = docs[index];
+                  final triggerId = trigger.id;
+                  final triggerName = trigger['name'] ?? 'Unnamed Trigger';
+                  final triggerDescription = trigger['description'] ?? '';
+                  final category = trigger['category'] ?? 'Uncategorized';
+                  final count = triggerFrequency[triggerName] ?? 1;
+
+                  Color frequencyColor = Colors.green;
+                  if (count >= 5) {
+                    frequencyColor = Colors.red;
+                  } else if (count >= 3) {
+                    frequencyColor = Colors.orange;
+                  } else if (count >= 2) {
+                    frequencyColor = Colors.amber;
+                  }
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      leading: Icon(Icons.warning, color: frequencyColor),
+                      title: Text(triggerName),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(triggerDescription),
+                          const SizedBox(height: 4),
+                          Text("Category: $category"),
+                        ],
+                      ),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'x$count',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: frequencyColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.blue,
+                                ),
+                                onPressed: () {
+                                  _showEditTriggerDialog(
+                                    triggerId,
+                                    triggerName,
+                                    triggerDescription,
+                                    category,
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () {
+                                  _deleteTrigger(triggerId);
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
+  }
+
+  void _showAddTriggerDialog() {
+    TextEditingController nameController = TextEditingController();
+    TextEditingController descriptionController = TextEditingController();
+    String selectedCategory = 'Emotional'; // Default category
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add New Trigger'),
+          content: SingleChildScrollView(
+            // <-- Add this line
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Trigger Name'),
+                ),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+                DropdownButton<String>(
+                  value: selectedCategory,
+                  items:
+                      triggerCategories
+                          .map(
+                            (cat) =>
+                                DropdownMenuItem(value: cat, child: Text(cat)),
+                          )
+                          .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCategory = value!;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _addTrigger(
+                  nameController.text,
+                  descriptionController.text,
+                  selectedCategory,
+                );
+                Navigator.of(context).pop();
+              },
+              child: const Text('Add Trigger'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addTrigger(String name, String description, String category) {
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user?.uid)
+        .collection('triggers')
+        .add({
+          'name': name,
+          'description': description,
+          'category': category,
+          'date': Timestamp.now(),
+        });
+  }
+
+  void _showEditTriggerDialog(
+    String triggerId,
+    String currentName,
+    String currentDescription,
+    String currentCategory,
+  ) {
+    TextEditingController nameController = TextEditingController(
+      text: currentName,
+    );
+    TextEditingController descriptionController = TextEditingController(
+      text: currentDescription,
+    );
+    String selectedEditCategory = currentCategory;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Trigger'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Trigger Name'),
+              ),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+              DropdownButton<String>(
+                value: selectedEditCategory,
+                items:
+                    triggerCategories
+                        .map(
+                          (cat) =>
+                              DropdownMenuItem(value: cat, child: Text(cat)),
+                        )
+                        .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedEditCategory = value!;
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _updateTrigger(
+                  triggerId,
+                  nameController.text,
+                  descriptionController.text,
+                  selectedEditCategory,
+                );
+                Navigator.of(context).pop();
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updateTrigger(
+    String triggerId,
+    String name,
+    String description,
+    String category,
+  ) {
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user?.uid)
+        .collection('triggers')
+        .doc(triggerId)
+        .update({
+          'name': name,
+          'description': description,
+          'category': category,
+          'date': Timestamp.now(),
+        });
+  }
+
+  void _deleteTrigger(String triggerId) {
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user?.uid)
+        .collection('triggers')
+        .doc(triggerId)
+        .delete();
   }
 
   Widget _buildToggleButtons() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: ToggleButtons(
-        isSelected: [
-          selectedIndex == 0,
-          selectedIndex == 1,
-          selectedIndex == 2,
-        ],
+        isSelected: [selectedIndex == 0, selectedIndex == 1],
         onPressed: (int index) {
           setState(() {
             selectedIndex = index;
@@ -117,7 +445,7 @@ class _BehaviorLogPageState extends State<BehaviorLogPage> {
         fillColor: Colors.deepPurple,
         color: Colors.deepPurple,
         constraints: const BoxConstraints(minHeight: 40, minWidth: 100),
-        children: const [Text('Symptoms'), Text('Average'), Text('Trend')],
+        children: const [Text('Triggers'), Text('Average')],
       ),
     );
   }

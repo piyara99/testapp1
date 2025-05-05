@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 
 class MemoryMatchPage extends StatefulWidget {
@@ -27,25 +27,40 @@ class _MemoryMatchPageState extends State<MemoryMatchPage> {
   }
 
   Future<void> _loadImages() async {
-    final storageRef = FirebaseStorage.instance.ref().child('memory_match');
-    final ListResult result = await storageRef.listAll();
-    final urls = await Future.wait(
-      result.items.map((ref) => ref.getDownloadURL()).toList(),
-    );
+    try {
+      // Fetch images from Firestore
+      final querySnapshot =
+          await FirebaseFirestore.instance
+              .collection('imageLibrary')
+              .orderBy('timestamp') // Optionally, order by timestamp
+              .get();
 
-    final allUrls = [...urls, ...urls]; // Duplicate for matching pairs
-    allUrls.shuffle(Random());
+      final imageUrls =
+          querySnapshot.docs.map((doc) {
+            // Explicitly cast the 'url' field to a String
+            return doc['url'] as String;
+          }).toList();
 
-    setState(() {
-      _imageUrls = urls;
-      _cards =
-          allUrls
-              .asMap()
-              .entries
-              .map((entry) => _CardItem(index: entry.key, url: entry.value))
-              .toList();
-      _loading = false;
-    });
+      // Duplicate the URLs to create pairs for the memory game
+      final allUrls = [...imageUrls, ...imageUrls];
+      allUrls.shuffle(Random());
+
+      setState(() {
+        _imageUrls = imageUrls; // This is now a List<String>
+        _cards =
+            allUrls
+                .asMap()
+                .entries
+                .map((entry) => _CardItem(index: entry.key, url: entry.value))
+                .toList();
+        _loading = false;
+      });
+    } catch (e) {
+      print("Error loading images from Firestore: $e");
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
   void _onCardTap(int index) {
@@ -82,7 +97,6 @@ class _MemoryMatchPageState extends State<MemoryMatchPage> {
   }
 
   void _showStarAnimation() {
-    // Generate a random position for the star
     final random = Random();
     final starPosition = Offset(
       random.nextDouble() * MediaQuery.of(context).size.width,
@@ -107,7 +121,7 @@ class _MemoryMatchPageState extends State<MemoryMatchPage> {
         title: const Text('Match the Pictures'),
         backgroundColor: Colors.deepPurple,
       ),
-      backgroundColor: const Color(0xFFF8F6FF),
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           _loading
@@ -128,9 +142,11 @@ class _MemoryMatchPageState extends State<MemoryMatchPage> {
 
                   return GestureDetector(
                     onTap: () => _onCardTap(index),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color:
+                            isRevealed ? Colors.deepPurple[200] : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
@@ -160,7 +176,6 @@ class _MemoryMatchPageState extends State<MemoryMatchPage> {
                   );
                 },
               ),
-          // Display stars for the game completion
           if (_isStarVisible)
             ..._starPositions.map((position) {
               return AnimatedPositioned(
@@ -171,6 +186,24 @@ class _MemoryMatchPageState extends State<MemoryMatchPage> {
                 child: Icon(Icons.star, color: Colors.yellow, size: 50),
               );
             }).toList(),
+          if (_isGameComplete)
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Great Job!',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Icon(Icons.star, color: Colors.yellow, size: 100),
+                ],
+              ),
+            ),
         ],
       ),
     );

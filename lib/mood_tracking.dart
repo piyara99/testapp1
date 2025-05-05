@@ -19,8 +19,77 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
   String _selectedEmoji = '';
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  Future<void> _tasksFuture = Future.value(); // Default dummy future
 
   final List<String> _selectedTasks = [];
+  List<Map<String, dynamic>> _tasks = []; // Store fetched tasks
+
+  // Fetch tasks for a specific date
+  Future<void> _fetchTasks() async {
+    String? userId = getUserId();
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not signed in. Please sign in.')),
+      );
+      return;
+    }
+
+    // Set the task date as today's date in 'YYYY-MM-DD' format
+    String taskDate =
+        DateTime.now().toIso8601String().split('T')[0]; // '2025-05-05'
+
+    // Log for debugging
+    print('Fetching tasks for date: $taskDate');
+
+    try {
+      // Access the Firestore collection using the path you provided
+      QuerySnapshot snapshot =
+          await _firestore
+              .collection('users')
+              .doc(userId) // User ID
+              .collection('child')
+              .doc('childProfile') // Fixed child profile path
+              .collection('tasks')
+              .doc(taskDate) // Tasks for today's date
+              .collection('taskList') // Collection of tasks for this date
+              .get();
+
+      // Log the number of tasks fetched
+      print("Fetched tasks: ${snapshot.docs.length}");
+
+      if (snapshot.docs.isEmpty) {
+        print("No tasks found for this day.");
+      } else {
+        // Debugging: Log task data
+        snapshot.docs.forEach((doc) {
+          print('Task Data: ${doc.data()}');
+        });
+      }
+
+      setState(() {
+        // Map the fetched tasks to a list of task details (including title, imageUrl, description, etc.)
+        _tasks =
+            snapshot.docs.map((doc) {
+              return {
+                'title': doc['title'],
+                'imageUrl': doc['imageUrl'], // Add other fields as necessary
+                'description': doc['description'],
+                'time': doc['time'],
+                'status': doc['status'],
+              };
+            }).toList();
+      });
+    } catch (e) {
+      print("Error fetching tasks: $e");
+    }
+  }
+
+  // Call _fetchTasks when the page loads
+  @override
+  void initState() {
+    super.initState();
+    _tasksFuture = _fetchTasks();
+  }
 
   final List<Map<String, String>> _emojiOptions = [
     {"emoji": "😊", "label": "Happy"},
@@ -41,6 +110,16 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
   String? getUserId() {
     User? user = _auth.currentUser;
     return user?.uid;
+  }
+
+  void _resetForm() {
+    setState(() {
+      _moodScore = 5.0;
+      _wellBeingScore = 5.0;
+      _moodNote = '';
+      _selectedEmoji = '';
+      _selectedTasks.clear();
+    });
   }
 
   Future<void> _saveMoodData() async {
@@ -77,6 +156,7 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('Mood Recorded! $suggestion')));
+    _resetForm();
 
     setState(() {
       _moodScore = 5.0;
@@ -147,35 +227,41 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
 
   Widget _buildTaskSelector() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Select tasks associated with your mood:',
           style: TextStyle(fontSize: 18),
         ),
-        CheckboxListTile(
-          title: Text('Feeding'),
-          value: _selectedTasks.contains('Feeding'),
-          onChanged: (bool? selected) {
-            setState(() {
-              if (selected == true) {
-                _selectedTasks.add('Feeding');
-              } else {
-                _selectedTasks.remove('Feeding');
-              }
-            });
-          },
-        ),
-        CheckboxListTile(
-          title: Text('Medication'),
-          value: _selectedTasks.contains('Medication'),
-          onChanged: (bool? selected) {
-            setState(() {
-              if (selected == true) {
-                _selectedTasks.add('Medication');
-              } else {
-                _selectedTasks.remove('Medication');
-              }
-            });
+        FutureBuilder<void>(
+          future: _tasksFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            } else if (snapshot.hasError) {
+              return Text('Error loading tasks: ${snapshot.error}');
+            } else if (_tasks.isEmpty) {
+              return const Text('No tasks available for today.');
+            } else {
+              return Column(
+                children:
+                    _tasks.map((task) {
+                      return CheckboxListTile(
+                        title: Text(task['title'] ?? 'No Title'),
+                        value: _selectedTasks.contains(task['title']),
+                        onChanged: (bool? selected) {
+                          setState(() {
+                            if (selected == true) {
+                              _selectedTasks.add(task['title']);
+                            } else {
+                              _selectedTasks.remove(task['title']);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+              );
+            }
           },
         ),
       ],
@@ -253,194 +339,190 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
     );
   }
 
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: const Color(0xFFF5FAFF),
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const CaregiverDashboard()),
+          );
+        },
+      ),
+      title: Row(
+        children: const [
+          CircleAvatar(
+            backgroundColor: Colors.deepPurple,
+            child: Icon(Icons.mood, color: Colors.white),
+          ),
+          SizedBox(width: 12),
+          Text(
+            'Mood Tracking',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          UserAccountsDrawerHeader(
+            accountName: Text('Caregiver Name'),
+            accountEmail: Text('caregiver@example.com'),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, color: Colors.blue[400]),
+            ),
+            decoration: BoxDecoration(color: Colors.blue[400]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.deepPurple,
+      ),
+    );
+  }
+
+  Widget _buildEmojiSelector() {
+    return Wrap(
+      spacing: 10,
+      children:
+          _emojiOptions.map((option) {
+            return ChoiceChip(
+              label: Text(
+                option['emoji']!,
+                style: const TextStyle(fontSize: 24),
+              ),
+              selected: _selectedEmoji == option['emoji'],
+              onSelected: (selected) {
+                setState(() {
+                  _selectedEmoji = selected ? option['emoji']! : '';
+                });
+              },
+              selectedColor: Colors.deepPurple.shade100,
+              backgroundColor: Colors.grey.shade100,
+              side: const BorderSide(color: Colors.deepPurple),
+              labelStyle: TextStyle(
+                fontSize: 24,
+                color:
+                    _selectedEmoji == option['emoji']
+                        ? Colors.deepPurple
+                        : Colors.black87,
+              ),
+            );
+          }).toList(),
+    );
+  }
+
+  Widget _buildNoteInput() {
+    return TextField(
+      maxLines: 4,
+      style: const TextStyle(color: Colors.black),
+      decoration: InputDecoration(
+        hintText: 'Optional note or reflection...',
+        hintStyle: const TextStyle(color: Colors.black54),
+        filled: true,
+        fillColor: Colors.white10,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+      ),
+      onChanged: (value) => _moodNote = value,
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return ElevatedButton(
+      onPressed: _saveMoodData,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+      child: const Text('Submit'),
+    );
+  }
+
+  Widget _buildWeeklyReport() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getMoodHistory(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Text('No mood history available.');
+        } else {
+          Map<String, int> insights = _generateInsights(snapshot.data!);
+          return Column(
+            children: [
+              _buildWeeklySummary(snapshot.data!),
+              const SizedBox(height: 20),
+              _buildMoodPieChart(insights),
+              const SizedBox(height: 20),
+              _buildMoodHistory(snapshot.data!),
+            ],
+          );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CaregiverDashboard(),
-              ),
-            );
-          },
-        ),
-        title: const Text(
-          'Mood Tracker',
-          style: TextStyle(color: Colors.black),
-        ),
-      ),
-
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            UserAccountsDrawerHeader(
-              accountName: Text('Caregiver Name'),
-              accountEmail: Text('caregiver@example.com'),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Colors.blue[400]),
-              ),
-              decoration: BoxDecoration(color: Colors.blue[400]),
-            ),
-            ListTile(
-              title: const Text('Dashboard'),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CaregiverDashboard(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Mood Tracking'),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MoodTrackingPage(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Log Out'),
-              onTap: () {
-                _auth.signOut();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const signin.SignInPage(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+      appBar: _buildAppBar(),
+      drawer: _buildDrawer(),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Daily Mood Check-in",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 10,
-                children:
-                    _emojiOptions.map((option) {
-                      return ChoiceChip(
-                        label: Text(option['emoji']!),
-                        selected: _selectedEmoji == option['emoji'],
-                        onSelected: (selected) {
-                          setState(() {
-                            _selectedEmoji = selected ? option['emoji']! : '';
-                          });
-                        },
-                        backgroundColor: Colors.white24,
-                        selectedColor: Colors.white,
-                        labelStyle: TextStyle(
-                          fontSize: 24,
-                          color:
-                              _selectedEmoji == option['emoji']
-                                  ? Colors.blue[400]
-                                  : Colors.white,
-                        ),
-                      );
-                    }).toList(),
-              ),
-              const SizedBox(height: 30),
-              _buildSlider(
-                "Mood",
-                _moodScore,
-                (val) => setState(() => _moodScore = val),
-              ),
-              const SizedBox(height: 20),
-              _buildSlider(
-                "Well-being",
-                _wellBeingScore,
-                (val) => setState(() => _wellBeingScore = val),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                maxLines: 4,
-                style: const TextStyle(color: Colors.black),
-                decoration: InputDecoration(
-                  hintText: 'Optional note or reflection...',
-                  hintStyle: const TextStyle(color: Colors.black54),
-                  filled: true,
-                  fillColor: Colors.white10,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onChanged: (value) => _moodNote = value,
-              ),
-              const SizedBox(height: 30),
-              _buildTaskSelector(),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _saveMoodData,
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.blue[400],
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 15,
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                child: const Text('Submit'),
-              ),
-              const SizedBox(height: 30),
-              const Text(
-                "Weekly Mood Report",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              FutureBuilder<List<Map<String, dynamic>>>(
-                future: _getMoodHistory(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return CircularProgressIndicator();
-                  } else if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Text('No mood history available.');
-                  } else {
-                    Map<String, int> insights = _generateInsights(
-                      snapshot.data!,
-                    );
-                    return Column(
-                      children: [
-                        _buildWeeklySummary(snapshot.data!),
-                        const SizedBox(height: 20),
-                        _buildMoodPieChart(insights),
-                        const SizedBox(height: 20),
-                        _buildMoodHistory(snapshot.data!),
-                      ],
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader("Daily Mood Check-in"),
+            const SizedBox(height: 16),
+            _buildEmojiSelector(),
+            const SizedBox(height: 20),
+            _buildSlider(
+              "Mood",
+              _moodScore,
+              (val) => setState(() => _moodScore = val),
+            ),
+            const SizedBox(height: 20),
+            _buildSlider(
+              "Well-being",
+              _wellBeingScore,
+              (val) => setState(() => _wellBeingScore = val),
+            ),
+            const SizedBox(height: 20),
+            _buildNoteInput(),
+            const SizedBox(height: 20),
+            _buildTaskSelector(),
+            const SizedBox(height: 24),
+            _buildSubmitButton(),
+            const SizedBox(height: 32),
+            _buildHeader("Weekly Mood Report"),
+            const SizedBox(height: 16),
+            _buildWeeklyReport(),
+          ],
         ),
       ),
     );

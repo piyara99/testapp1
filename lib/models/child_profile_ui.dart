@@ -12,11 +12,12 @@ class ChildHomePage extends StatelessWidget {
         'route':
             '/visual_schedule', // Changed route to the visual_schedule_page
       },
-      {'title': 'Fun Rewards', 'icon': Icons.star, 'route': '/rewards'},
+      {'title': 'Routine', 'icon': Icons.star, 'route': '/guided_routine'},
       {
         'title': 'Check My Mood',
         'icon': Icons.emoji_emotions,
-        'route': '/guided_routine', // Changed route to guided_routine_page
+        'route':
+            '/emotion_based_checkins', // Changed route to guided_routine_page
       },
       {
         'title': 'Say with Pictures',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:testapp/models/emotion_based_checkins.dart';
 
 import 'signin.dart';
 import 'main_dashboard.dart';
@@ -29,9 +30,9 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const SplashScreen(),
         '/visual_schedule': (context) => const VisualSchedulePage(),
-        //'/rewards': (context) => const RewardsPage(),
+        '/emotion_based_checkins': (context) => const EmotionCheckInPage(),
         '/guided_routine': (context) => const GuidedRoutinePage(),
-        //'/picture_exchange': (context) => const PictureExchangePage(),
+        '/picture_exchange': (context) => const PecPage(),
         '/memory_match': (context) => const MemoryMatchPage(),
         '/sorting_activity': (context) => const SortingActivityPage(),
       },

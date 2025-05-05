@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:testapp/caregiver_dashboard.dart';
-// Back navigation target
 
 class BehaviorTrackingPage extends StatefulWidget {
   const BehaviorTrackingPage({super.key});
@@ -97,7 +96,7 @@ class _BehaviorTrackingPageState extends State<BehaviorTrackingPage> {
           children: const [
             CircleAvatar(
               backgroundColor: Colors.deepPurple,
-              child: Icon(Icons.emoji_emotions, color: Colors.white),
+              child: Icon(Icons.track_changes, color: Colors.white),
             ),
             SizedBox(width: 12),
             Text(
