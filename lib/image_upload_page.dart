@@ -18,6 +18,9 @@ class _ImageUploadPageState extends State<ImageUploadPage> {
   Future<void> _fetchImages() async {
     final querySnapshot =
         await FirebaseFirestore.instance.collection('imageLibrary').get();
+
+    if (!mounted) return; // 🔒 Prevent calling setState on a disposed widget
+
     setState(() {
       images =
           querySnapshot.docs.map((doc) {
