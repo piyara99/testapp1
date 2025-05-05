@@ -137,7 +137,7 @@ class _ImageUploadPageState extends State<ImageUploadPage> {
           children: const [
             CircleAvatar(
               backgroundColor: Colors.deepPurple,
-              child: Icon(Icons.track_changes, color: Colors.white),
+              child: Icon(Icons.image, color: Colors.white),
             ),
             SizedBox(width: 12),
             Text(

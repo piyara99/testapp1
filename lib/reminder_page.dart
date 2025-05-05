@@ -20,9 +20,32 @@ class _ReminderPageState extends State<ReminderPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Caregiver Reminders"),
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: Row(
+          children: const [
+            CircleAvatar(
+              backgroundColor: Colors.deepPurple,
+              child: Icon(Icons.notifications_active, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Caregiver Reminders',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
+
       body:
           userId == null
               ? const Center(child: Text("Please sign in to view reminders."))
@@ -32,8 +55,13 @@ class _ReminderPageState extends State<ReminderPage> {
                         .collection('users')
                         .doc(userId)
                         .collection('reminders')
+                        .where(
+                          'time',
+                          isGreaterThan: Timestamp.fromDate(DateTime.now()),
+                        )
                         .orderBy('time')
                         .snapshots(),
+
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -58,7 +86,7 @@ class _ReminderPageState extends State<ReminderPage> {
                               : 'No time';
 
                       return Card(
-                        color: Colors.teal.shade50,
+                        color: Colors.deepPurple.shade50,
                         margin: const EdgeInsets.symmetric(
                           horizontal: 15,
                           vertical: 8,
@@ -66,7 +94,7 @@ class _ReminderPageState extends State<ReminderPage> {
                         child: ListTile(
                           leading: const Icon(
                             Icons.notifications_active,
-                            color: Colors.teal,
+                            color: Colors.deepPurple,
                           ),
                           title: Text(
                             title,
@@ -89,7 +117,7 @@ class _ReminderPageState extends State<ReminderPage> {
                 },
               ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.deepPurple,
         onPressed: _addReminderDialog,
         child: const Icon(Icons.add),
       ),
