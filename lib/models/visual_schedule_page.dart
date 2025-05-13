@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:testapp/features/child_profile/child_theme_provider.dart';
 
 class VisualSchedulePage extends StatefulWidget {
   const VisualSchedulePage({super.key});
@@ -15,9 +17,12 @@ class _VisualSchedulePageState extends State<VisualSchedulePage> {
 
   late final CollectionReference taskCollection;
 
+  bool _isThemeLoaded = false;
+
   @override
   void initState() {
     super.initState();
+    _loadTheme();
     taskCollection = FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -28,16 +33,32 @@ class _VisualSchedulePageState extends State<VisualSchedulePage> {
         .collection('taskList');
   }
 
+  Future<void> _loadTheme() async {
+    await Provider.of<ChildThemeProvider>(
+      context,
+      listen: false,
+    ).fetchChildThemeColorFromFirestore();
+    setState(() {
+      _isThemeLoaded = true;
+    });
+  }
+
   Future<void> markTaskDone(String taskId) async {
     await taskCollection.doc(taskId).update({'status': 'done'});
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = Provider.of<ChildThemeProvider>(context).childThemeColor;
+
+    if (!_isThemeLoaded) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4E7F0), // soft lavender
       appBar: AppBar(
-        backgroundColor: Colors.purple,
+        backgroundColor: themeColor,
         title: const Text(
           'My Visual Schedule',
           style: TextStyle(color: Colors.white),

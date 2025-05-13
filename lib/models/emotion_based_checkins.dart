@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
+import 'package:testapp/features/child_profile/child_theme_provider.dart';
 
 class EmotionCheckInPage extends StatefulWidget {
   const EmotionCheckInPage({super.key});
@@ -27,12 +29,35 @@ class _EmotionCheckInPageState extends State<EmotionCheckInPage> {
     'Sad': 0,
   };
 
+  bool _isThemeLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    await Provider.of<ChildThemeProvider>(
+      context,
+      listen: false,
+    ).fetchChildThemeColorFromFirestore();
+    setState(() {
+      _isThemeLoaded = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final themeColor = Provider.of<ChildThemeProvider>(context).childThemeColor;
+
+    if (!_isThemeLoaded) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return Scaffold(
       backgroundColor: Colors.white, // Set the background to white
       appBar: AppBar(
-        backgroundColor: Colors.deepPurple, // Deep purple app bar
+        backgroundColor: themeColor, // Deep purple app bar
         title: const Text(
           'How Do You Feel?',
           style: TextStyle(color: Colors.white), // White title

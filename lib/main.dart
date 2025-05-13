@@ -1,21 +1,29 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:testapp/models/emotion_based_checkins.dart';
 
-import 'signin.dart';
-import 'main_dashboard.dart';
-import 'package:testapp/models/picture_exchange.dart'; // <-- create this file if not already done
+import 'package:testapp/features/auth/signin.dart';
+import 'package:testapp/features/dashboard/main_dashboard.dart';
+import 'package:testapp/features/games_activities/picture_exchange.dart'; // <-- create this file if not already done
 import 'package:testapp/models/visual_schedule_page.dart';
-import 'models/rewards_page.dart';
-import 'models/guided_routine_page.dart';
-import 'models/memory_match.dart';
-import 'models/sorting_activity.dart';
+import 'features/guided_routine/guided_routine_page.dart';
+import 'features/games_activities/memory_match.dart';
+import 'features/games_activities/sorting_activity.dart';
+import 'features/child_profile/child_theme_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => ChildThemeProvider())],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

@@ -46,7 +46,8 @@ dependencies:
   calendar_view: ^1.4.0
   table_calendar: ^3.0.9
   google_generative_ai: ^0.3.2
-  
+  audioplayers: ^5.2.1
+  provider: ^6.1.1
 
 
   
